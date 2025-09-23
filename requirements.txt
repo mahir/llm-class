@@ -1,0 +1,6 @@
+numpy
+scikit-learn
+requests
+PyPDF2
+pillow
+feedparser
