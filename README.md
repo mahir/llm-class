@@ -2,22 +2,26 @@
 
 Sample code for the "Business Applications of Large Language Models" course (IEORE4573, Columbia University). The repository now covers local Ollama RAG demos, structured output workflows, and OpenAI-powered evaluation tooling so you can explore end-to-end retrieval → augmentation → generation plus downstream analysis.
 
-## Project Layout
-### Week 3 — Local Ollama Workflows
-- `week3/simple-rag/simple-rag.py` — end-to-end FAQ chatbot that demonstrates the RAG loop (TF-IDF retrieval + Ollama-powered generation).
-- `week3/simple-rag-v2/mini_rag_ollama.py` — single-file dense RAG walkthrough that calls `/api/embeddings`, scores chunks with cosine similarity, and asks an Ollama chat model for grounded answers.
-- `week3/arxiv-summarizer/arxiv-summarizer.py` — downloads arXiv papers, chunks their text, and produces different summary styles with Ollama.
-- `week3/image-processor/image-processor.py` — batch-describes local images with vision models such as `llava`.
-- `week3/simple-batch/simple-batch.py` — minimal batch-processing example that extracts product tags across multiple prompts.
-- `week3/spanish-tutor-ollama/Modelfile` — custom `ollama create` recipe that turns `mistral` into a supportive Spanish instructor.
+## Table of Contents
+- [Project Layout](#project-layout)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [How the RAG Demo Works](#how-the-rag-demo-works)
+- [Additional Demos](#additional-demos)
+- [Customizing & Extending](#customizing--extending)
+- [OpenAI API Setup](#openai-api-setup)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
 
-### Week 4 — Evaluation & Structured Output
-- `week4/structured-output/structured_output.py` — enforces JSON-only answers from Ollama with lightweight schema hints.
-- `week4/structured-output/structured_output_complex.py` — expands the same pattern for multi-layer business scenario planning.
-- `week4/openai-api/eval2.py` — OpenAI Responses API evaluator with retry logic, per-class metrics, and JSON logging.
-- `week4/openai-api/eval.py` — simpler Chat Completions evaluator you can contrast with the Responses API flow.
-- `week4/openai-api/test.py` and `test_multiple.py` — structured-output support ticket triage that validates responses against a JSON schema before accepting them.
-- `week4/llm-judge/ollama_judge.py` — compares answers from two Ollama-served models and asks a judge model to pick a winner with rationale and scoring.
+## Project Layout
+The repository is split into weekly modules so you can focus on one capability at a time. The table below highlights the primary entry points.
+
+| Week | Focus | Key Scripts |
+| --- | --- | --- |
+| Week 3 | Local Ollama workflows (retrieval, image, batching) | `week3/simple-rag/simple-rag.py`, `week3/simple-rag-v2/mini_rag_ollama.py`, `week3/arxiv-summarizer/arxiv-summarizer.py`, `week3/image-processor/image-processor.py`, `week3/simple-batch/simple-batch.py`, `week3/spanish-tutor-ollama/Modelfile` |
+| Week 4 | Evaluation & structured output (Ollama + OpenAI) | `week4/structured-output/structured_output.py`, `week4/structured-output/structured_output_complex.py`, `week4/openai-api/eval.py`, `week4/openai-api/eval2.py`, `week4/openai-api/test.py`, `week4/openai-api/test_multiple.py`, `week4/llm-judge/ollama_judge.py` |
+
+Each directory also includes helper modules and cached artifacts that demonstrate common data pipelines (chunking, embedding, evaluation logs, etc.).
 
 ## Prerequisites
 - Python 3.9+
@@ -29,11 +33,17 @@ Sample code for the "Business Applications of Large Language Models" course (IEO
 ## Quick Start
 1. (Optional) create and activate a virtual environment: `python3 -m venv .venv && source .venv/bin/activate`
 2. Install Python dependencies: `pip install -r requirements.txt`
-3. Start Ollama in another terminal: `ollama serve`
-4. Pull the default model if needed: `ollama pull llama3.2`
-5. Run the default RAG demo from the repo root: `python week3/simple-rag/simple-rag.py`
+3. (Optional) verify Ollama connectivity: `curl http://localhost:11434/api/tags`
+4. Start Ollama in another terminal: `ollama serve`
+5. Pull the default model if needed: `ollama pull llama3.2`
+6. Run the default RAG demo from the repo root: `python week3/simple-rag/simple-rag.py`
 
 The script prints sample questions, waits for your input, shows which FAQ entries it retrieved, and returns a grounded answer from the local model.
+
+### Verifying Your Environment
+- Confirm Python dependencies resolved cleanly: `python -m pip check`
+- Ensure you can reach the Ollama REST API before starting a script: `curl http://localhost:11434/api/generate -d '{"model":"llama3.2","prompt":"ping"}'`
+- When using the OpenAI API examples, double-check that `OPENAI_API_KEY` is exported in the same shell session that runs the scripts.
 
 ## How the RAG Demo Works
 1. **Indexing** — `SimpleRAG.add_documents` loads a list of FAQ articles and builds TF‑IDF vectors so queries and documents live in the same vector space.
@@ -54,12 +64,18 @@ The knowledge base is intentionally tiny and hard-coded in `create_sample_knowle
   - Builds embeddings with Ollama, computes cosine similarity manually, and prompts a chat model using only retrieved context.
 - **Structured Output (Ollama)**: `python week4/structured-output/structured_output.py`
   - Forces JSON-only answers for quick entity extraction or planning tasks; swap to the complex version for multi-layer business reports.
+- **Ollama Judge**: `python week4/llm-judge/ollama_judge.py --model-a llama3.1 --model-b qwen2:7b`
+  - Compares outputs from two models and requests a third model to score and explain the winning answer; ideal for rapid regression testing.
 - **OpenAI Sentiment Eval**: `python week4/openai-api/eval2.py`
   - Runs an automated evaluation loop against a toy sentiment dataset; set `OPENAI_API_KEY` before executing.
 - **Support Ticket Triage**: `python week4/openai-api/test_multiple.py`
   - Validates JSON-formatted answers against a schema and retries until the model produces well-formed tickets.
-- **Model Comparator**: `python week4/llm-judge/ollama_judge.py --model-a llama3.1 --model-b qwen2:7b`
-  - Generates responses from two local models, then asks a judge model to score and pick a winner with reasoning.
+
+### Suggested Learning Path
+1. Run the Week 3 simple RAG demo to understand the baseline retrieval loop.
+2. Experiment with the dense RAG variant or the ArXiv summarizer to explore more advanced retrieval options.
+3. Move to Week 4 structured output scripts to practice enforcing JSON responses and schema validation.
+4. Finish by benchmarking or judging models with the Ollama or OpenAI evaluation workflows.
 
 ## Customizing & Extending
 - Swap in different Ollama models by editing the constructor arguments (e.g., `SimpleRAG(ollama_model="model-name")`) or passing CLI flags such as `--model`.
@@ -69,8 +85,9 @@ The knowledge base is intentionally tiny and hard-coded in `create_sample_knowle
 
 ## OpenAI API Setup
 - Set `OPENAI_API_KEY` in your shell (`export OPENAI_API_KEY="sk-..."`) before running anything in `week4/openai-api/`.
+- Optional but recommended: set `OPENAI_BASE_URL` if you are proxying requests through a gateway or Azure OpenAI deployment.
 - Pick lightweight models (`gpt-4o-mini`, `gpt-5-nano`, etc.) if you want faster iteration; adjust the script defaults as needed.
-- The evaluation and ticket-triage scripts write JSON artifacts next to the source so you can diff results across runs.
+- The evaluation and ticket-triage scripts write JSON artifacts next to the source so you can diff results across runs. Clean up old results if you want a fresh run.
 
 ## Troubleshooting
 - **Missing packages** — each script prints friendly install hints if an import fails on startup.
