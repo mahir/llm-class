@@ -19,6 +19,76 @@ import PyPDF2
 import feedparser
 from dataclasses import dataclass
 
+
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+    @classmethod
+    def disable(cls):
+        """Disable colors (for non-TTY output)"""
+        cls.HEADER = cls.BLUE = cls.CYAN = cls.GREEN = ''
+        cls.YELLOW = cls.RED = cls.BOLD = cls.DIM = cls.RESET = ''
+
+
+# Disable colors if not outputting to a terminal
+if not sys.stdout.isatty():
+    Colors.disable()
+
+
+def print_header(text: str):
+    """Print a styled header"""
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  {text}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.RESET}")
+
+
+def print_subheader(text: str):
+    """Print a styled subheader"""
+    print(f"\n{Colors.BOLD}{Colors.BLUE}{text}{Colors.RESET}")
+    print(f"{Colors.DIM}{'-' * 50}{Colors.RESET}")
+
+
+def print_info(label: str, value: str):
+    """Print a labeled info line"""
+    print(f"  {Colors.BOLD}{label}:{Colors.RESET} {value}")
+
+
+def print_success(text: str):
+    """Print a success message"""
+    print(f"{Colors.GREEN}[OK]{Colors.RESET} {text}")
+
+
+def print_warning(text: str):
+    """Print a warning message"""
+    print(f"{Colors.YELLOW}[!]{Colors.RESET} {text}")
+
+
+def print_error(text: str):
+    """Print an error message"""
+    print(f"{Colors.RED}[ERROR]{Colors.RESET} {text}")
+
+
+def print_progress(text: str):
+    """Print a progress/status message"""
+    print(f"{Colors.DIM}>>>{Colors.RESET} {text}")
+
+
+def progress_bar(current: int, total: int, prefix: str = "", suffix: str = "", width: int = 30) -> str:
+    """Generate a text progress bar"""
+    filled = int(width * current / total)
+    bar = f"{Colors.GREEN}{'█' * filled}{Colors.DIM}{'░' * (width - filled)}{Colors.RESET}"
+    percent = f"{100 * current / total:.0f}%"
+    return f"{prefix} {bar} {percent} {suffix}"
+
 @dataclass
 class ArxivPaper:
     """Data class to hold arXiv paper information"""
@@ -34,7 +104,7 @@ class ArxivPaper:
 
 class ArxivSummarizer:
     def __init__(self, 
-                 model_name: str = "llama3.1:8b",
+                 model_name: str = "phi3.5",
                  ollama_host: str = "http://localhost:11434",
                  cache_dir: str = "./arxiv_cache"):
         """
@@ -197,19 +267,19 @@ Simple Explanation:"""
         
         # Return cached file if it exists
         if pdf_path.exists():
-            print(f"Using cached PDF: {pdf_path}")
+            print_success(f"Using cached PDF: {Colors.DIM}{pdf_path}{Colors.RESET}")
             return str(pdf_path)
-        
+
         try:
-            print(f"Downloading PDF from {paper.pdf_url}...")
+            print_progress(f"Downloading PDF from {Colors.BLUE}{paper.pdf_url}{Colors.RESET}")
             response = requests.get(paper.pdf_url, stream=True, timeout=60)
             response.raise_for_status()
-            
+
             with open(pdf_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
-            
-            print(f"PDF downloaded: {pdf_path}")
+
+            print_success(f"PDF downloaded: {Colors.DIM}{pdf_path}{Colors.RESET}")
             return str(pdf_path)
             
         except requests.RequestException as e:
@@ -224,19 +294,19 @@ Simple Explanation:"""
                 pdf_reader = PyPDF2.PdfReader(file)
                 num_pages = min(len(pdf_reader.pages), max_pages)
                 
-                print(f"Extracting text from {num_pages} pages...")
-                
+                print_progress(f"Extracting text from {Colors.BOLD}{num_pages}{Colors.RESET} pages...")
+
                 for page_num in range(num_pages):
                     page = pdf_reader.pages[page_num]
                     text = page.extract_text()
-                    
+
                     # Clean up text
                     text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
                     text = re.sub(r'[^\x00-\x7F]+', ' ', text)  # Remove non-ASCII
                     text_parts.append(text)
-                
+
                 full_text = ' '.join(text_parts)
-                print(f"Extracted {len(full_text)} characters")
+                print_success(f"Extracted {Colors.BOLD}{len(full_text):,}{Colors.RESET} characters")
                 return full_text
                 
         except Exception as e:
@@ -257,7 +327,7 @@ Simple Explanation:"""
         }
         
         try:
-            print(f"Sending request to Ollama (prompt length: {len(prompt)} chars)...")
+            print_progress(f"Sending request to Ollama ({Colors.DIM}{len(prompt):,} chars{Colors.RESET})")
             response = requests.post(
                 self.api_url,
                 json=payload,
@@ -310,35 +380,36 @@ Simple Explanation:"""
             prompt = self.prompts[summary_type].format(text=chunks[0])
             return self.query_ollama(prompt, timeout=300)
         
-        print(f"Processing {len(chunks)} chunks...")
+        print_progress(f"Processing {Colors.BOLD}{len(chunks)}{Colors.RESET} chunks...")
         chunk_summaries = []
-        
+
         # Create chunk-specific prompt
         chunk_prompt = """Summarize this section of a research paper, focusing on key points, methods, and findings. Be concise but comprehensive:
 
 Section: {text}
 
 Summary:"""
-        
+
         # Summarize each chunk
         for i, chunk in enumerate(chunks, 1):
-            print(f"Processing chunk {i}/{len(chunks)}...")
+            print(progress_bar(i, len(chunks), prefix="  Chunks", suffix=""), end='\r')
             try:
                 prompt = chunk_prompt.format(text=chunk)
                 summary = self.query_ollama(prompt, max_tokens=500, timeout=180)
                 chunk_summaries.append(summary)
             except Exception as e:
-                print(f"Warning: Failed to process chunk {i}: {e}")
+                print_warning(f"Failed to process chunk {i}: {e}")
                 chunk_summaries.append(f"[Chunk {i} processing failed]")
-        
+        print()  # New line after progress bar
+
         # Combine chunk summaries
-        combined_text = "\n\n".join([f"Section {i+1}: {summary}" 
+        combined_text = "\n\n".join([f"Section {i+1}: {summary}"
                                    for i, summary in enumerate(chunk_summaries)])
-        
+
         # Create final summary prompt
         final_prompt = self.prompts[summary_type].format(text=combined_text)
-        
-        print("Generating final summary...")
+
+        print_progress("Generating final summary...")
         return self.query_ollama(final_prompt, max_tokens=1500, timeout=300)
     
     def summarize_paper(self, 
@@ -360,15 +431,15 @@ Summary:"""
         Returns:
             Dict containing paper info and summary
         """
-        print(f"Processing paper: {arxiv_id}")
-        
+        print_subheader(f"Processing: {arxiv_id}")
+
         # Extract and validate arXiv ID
         arxiv_id = self.extract_arxiv_id(arxiv_id)
-        
+
         # Fetch metadata
         paper = self.fetch_paper_metadata(arxiv_id)
-        print(f"Found paper: {paper.title}")
-        print(f"Authors: {', '.join(paper.authors)}")
+        print_info("Title", f"{Colors.BOLD}{paper.title}{Colors.RESET}")
+        print_info("Authors", ', '.join(paper.authors))
         
         # Choose text source
         if use_full_text and summary_type != "abstract":
@@ -378,15 +449,15 @@ Summary:"""
             
             # Limit text length to prevent overwhelming Ollama
             if len(text_content) > max_text_length:
-                print(f"Text too long ({len(text_content)} chars), truncating to {max_text_length} chars")
+                print_warning(f"Text too long ({len(text_content):,} chars), truncating to {max_text_length:,}")
                 text_content = text_content[:max_text_length]
-            
+
         else:
             # Use just the abstract
             text_content = paper.abstract
-        
+
         # Generate summary using chunking if needed
-        print("Generating summary with Ollama...")
+        print_progress(f"Generating {Colors.BOLD}{summary_type}{Colors.RESET} summary with Ollama...")
         
         try:
             if len(text_content) > 4000:  # Need to chunk
@@ -400,7 +471,7 @@ Summary:"""
         except Exception as e:
             # Fallback: try with just abstract if full text fails
             if use_full_text and summary_type != "abstract":
-                print(f"Full text processing failed ({e}), falling back to abstract only...")
+                print_warning(f"Full text failed ({e}), falling back to abstract...")
                 prompt = self.prompts["abstract"].format(text=paper.abstract)
                 summary = self.query_ollama(prompt, timeout=180)
                 summary = f"[Note: Summary based on abstract only due to processing error]\n\n{summary}"
@@ -449,7 +520,7 @@ Summary:"""
         Returns:
             List of paper summaries
         """
-        print(f"Searching arXiv for: {query}")
+        print_progress(f"Searching arXiv for: {Colors.BOLD}{query}{Colors.RESET}")
         
         # Search arXiv
         search_url = f"http://export.arxiv.org/api/query?search_query=all:{query}&max_results={max_results}&sortBy=submittedDate&sortOrder=descending"
@@ -463,10 +534,10 @@ Summary:"""
             entries = root.findall('{http://www.w3.org/2005/Atom}entry')
             
             if not entries:
-                print("No papers found for this query.")
+                print_warning("No papers found for this query.")
                 return []
-            
-            print(f"Found {len(entries)} papers. Processing...")
+
+            print_success(f"Found {Colors.BOLD}{len(entries)}{Colors.RESET} papers")
             
             results = []
             for i, entry in enumerate(entries, 1):
@@ -476,7 +547,7 @@ Summary:"""
                     arxiv_url = id_element.text
                     arxiv_id = self.extract_arxiv_id(arxiv_url)
                     
-                    print(f"\nProcessing {i}/{len(entries)}: {arxiv_id}")
+                    print(f"\n{Colors.CYAN}[{i}/{len(entries)}]{Colors.RESET} Processing {Colors.BOLD}{arxiv_id}{Colors.RESET}")
                     
                     # Summarize paper
                     summary_result = self.summarize_paper(
@@ -488,7 +559,7 @@ Summary:"""
                     results.append(summary_result)
                     
                 except Exception as e:
-                    print(f"Failed to process {arxiv_id}: {e}")
+                    print_error(f"Failed to process {arxiv_id}: {e}")
                     continue
             
             return results
@@ -504,7 +575,61 @@ Summary:"""
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
         
-        print(f"Results saved to: {output_path}")
+        print_success(f"Results saved to: {Colors.BOLD}{output_path}{Colors.RESET}")
+
+def get_available_models(ollama_host: str = "http://localhost:11434") -> List[str]:
+    """Fetch available models from Ollama"""
+    try:
+        response = requests.get(f"{ollama_host}/api/tags", timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        models = [model["name"] for model in data.get("models", [])]
+        return sorted(models)
+    except requests.exceptions.ConnectionError:
+        print_error("Cannot connect to Ollama - is it running?")
+        return []
+    except Exception as e:
+        print_error(f"Failed to fetch models: {e}")
+        return []
+
+
+def select_model(models: List[str], default: str = None) -> str:
+    """Prompt user to select a model from available options"""
+    if not models:
+        print_warning("No models available. Using default.")
+        return default or "llama3.1:8b"
+
+    print(f"\n{Colors.BOLD}{Colors.CYAN}Available Ollama Models{Colors.RESET}")
+    print(f"{Colors.DIM}{'─' * 40}{Colors.RESET}")
+
+    for i, model in enumerate(models, 1):
+        if model == default:
+            print(f"  {Colors.GREEN}{i:2}.{Colors.RESET} {Colors.BOLD}{model}{Colors.RESET} {Colors.DIM}(default){Colors.RESET}")
+        else:
+            print(f"  {Colors.CYAN}{i:2}.{Colors.RESET} {model}")
+
+    print(f"{Colors.DIM}{'─' * 40}{Colors.RESET}")
+
+    while True:
+        try:
+            choice = input(f"{Colors.BOLD}Select model{Colors.RESET} [1-{len(models)}] or Enter for default: ").strip()
+            if not choice:
+                # Use default if available in list, otherwise first model
+                if default and default in models:
+                    return default
+                return models[0]
+
+            idx = int(choice) - 1
+            if 0 <= idx < len(models):
+                return models[idx]
+            else:
+                print_warning(f"Please enter a number between 1 and {len(models)}")
+        except ValueError:
+            print_warning("Please enter a valid number")
+        except (EOFError, KeyboardInterrupt):
+            print(f"\n{Colors.DIM}Using default model.{Colors.RESET}")
+            return default or models[0] if models else "llama3.1:8b"
+
 
 def main():
     """Command line interface"""
@@ -613,11 +738,22 @@ Examples:
     )
     
     args = parser.parse_args()
-    
+
     try:
+        # Fetch available models and prompt user to select one
+        print_progress("Fetching available Ollama models...")
+        available_models = get_available_models(args.host)
+
+        if not available_models:
+            print_warning("Could not fetch models. Using specified/default model.")
+            selected_model = args.model
+        else:
+            selected_model = select_model(available_models, default=args.model)
+            print(f"\n{Colors.GREEN}>{Colors.RESET} Using model: {Colors.BOLD}{selected_model}{Colors.RESET}")
+
         # Initialize summarizer
         summarizer = ArxivSummarizer(
-            model_name=args.model,
+            model_name=selected_model,
             ollama_host=args.host,
             cache_dir=args.cache_dir
         )
@@ -631,19 +767,19 @@ Examples:
             )
             
             # Print results
-            print("\n" + "="*80)
-            print(f"SEARCH RESULTS: {args.search}")
-            print("="*80)
-            
+            print_header(f"Search Results: {args.search}")
+
             for i, result in enumerate(results, 1):
-                print(f"\n--- Paper {i} ---")
-                print(f"Title: {result['paper_info']['title']}")
-                print(f"Authors: {', '.join(result['paper_info']['authors'])}")
-                print(f"arXiv ID: {result['paper_info']['arxiv_id']}")
-                print(f"Categories: {', '.join(result['paper_info']['categories'])}")
-                print(f"\nSummary:")
+                print(f"\n{Colors.BOLD}{Colors.YELLOW}Paper {i}{Colors.RESET}")
+                print(f"{Colors.DIM}{'─' * 50}{Colors.RESET}")
+                print_info("Title", f"{Colors.BOLD}{result['paper_info']['title']}{Colors.RESET}")
+                print_info("Authors", ', '.join(result['paper_info']['authors']))
+                print_info("arXiv ID", result['paper_info']['arxiv_id'])
+                print_info("Categories", ', '.join(result['paper_info']['categories']))
+                print(f"\n{Colors.BOLD}Summary:{Colors.RESET}")
+                print(f"{Colors.DIM}{'─' * 40}{Colors.RESET}")
                 print(result['summary'])
-                print("-" * 50)
+                print()
             
             # Save if requested
             if args.output:
@@ -651,7 +787,7 @@ Examples:
                     "search_query": args.search,
                     "search_date": datetime.now().isoformat(),
                     "summary_type": args.type,
-                    "model_used": args.model,
+                    "model_used": selected_model,
                     "results": results
                 }
                 summarizer.save_results(final_results, args.output)
@@ -667,23 +803,21 @@ Examples:
             )
             
             # Print result
-            print("\n" + "="*80)
-            print("PAPER SUMMARY")
-            print("="*80)
-            print(f"Title: {result['paper_info']['title']}")
-            print(f"Authors: {', '.join(result['paper_info']['authors'])}")
-            print(f"arXiv ID: {result['paper_info']['arxiv_id']}")
-            print(f"Categories: {', '.join(result['paper_info']['categories'])}")
-            print(f"Published: {result['paper_info']['published']}")
-            
+            print_header("Paper Summary")
+
+            print_info("Title", f"{Colors.BOLD}{result['paper_info']['title']}{Colors.RESET}")
+            print_info("Authors", ', '.join(result['paper_info']['authors']))
+            print_info("arXiv ID", f"{Colors.CYAN}{result['paper_info']['arxiv_id']}{Colors.RESET}")
+            print_info("Categories", ', '.join(result['paper_info']['categories']))
+            print_info("Published", result['paper_info']['published'])
+
             if result['paper_info']['doi']:
-                print(f"DOI: {result['paper_info']['doi']}")
-            
-            print(f"\nAbstract:")
-            print(result['paper_info']['abstract'])
-            
-            print(f"\n{args.type.upper()} SUMMARY:")
-            print("-" * 40)
+                print_info("DOI", result['paper_info']['doi'])
+
+            print_subheader("Abstract")
+            print(f"  {Colors.DIM}{result['paper_info']['abstract']}{Colors.RESET}")
+
+            print_subheader(f"{args.type.replace('_', ' ').title()} Summary")
             print(result['summary'])
             
             # Save if requested
@@ -693,10 +827,10 @@ Examples:
         return 0
         
     except KeyboardInterrupt:
-        print("\n❌ Process interrupted by user")
+        print(f"\n{Colors.YELLOW}Interrupted by user{Colors.RESET}")
         return 1
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print_error(str(e))
         return 1
 
 if __name__ == "__main__":
