@@ -174,13 +174,35 @@ def normalize_ws(text: str) -> str:
     """Collapse internal whitespace and trim ends."""
     return " ".join(text.split()).strip()
 
-def chunk_text(text: str, max_chars: int) -> List[str]:
+def chunk_text(text: str, max_chars: int, overlap: int = 50) -> List[str]:
     """
-    Trivial character-based chunker. For real apps, switch to a tokenizer-aware
-    or semantic chunker (e.g., split by headings, sentences, or paragraphs).
+    Character-based chunker with configurable overlap.
+
+    Overlap helps preserve context across chunk boundaries—important when
+    relevant information spans two chunks. For real apps, consider a
+    tokenizer-aware or semantic chunker (split by headings, sentences, etc.).
+
+    Args:
+        text: Text to chunk
+        max_chars: Maximum characters per chunk
+        overlap: Characters of overlap between consecutive chunks (default 50)
     """
     text = normalize_ws(text)
-    return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
+    if len(text) <= max_chars:
+        return [text]
+
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + max_chars
+        chunks.append(text[start:end])
+        # Move forward by (max_chars - overlap) to create overlapping windows
+        start += max_chars - overlap
+        # Avoid tiny final chunks
+        if start < len(text) and len(text) - start < overlap:
+            break
+
+    return chunks
 
 def embed_text(host: str, model: str, payload_key: str, text: str) -> List[float]:
     """

@@ -218,19 +218,32 @@ class SimpleRAG:
         # STEP 3: GENERATION
         # Create a carefully crafted prompt that includes:
         # - Role instruction (you are a customer service assistant)
-        # - Context from retrieved documents  
+        # - Context from retrieved documents
         # - The user's specific question
         # - Instructions for handling missing information
-        prompt = f"""You are a helpful customer service assistant for TechFlow Software. 
-Use the following context to answer the user's question. If the context doesn't contain 
-enough information, say so clearly and don't make up information.
+        # - Response format guidelines
+        # - Edge case handling
+        prompt = f"""You are a helpful, professional customer service assistant for TechFlow Software.
 
-Context:
+ROLE:
+- Answer questions accurately using ONLY the provided context documents
+- Be concise but thorough—aim for 2-4 sentences unless more detail is needed
+- Maintain a friendly, professional tone
+
+CONTEXT DOCUMENTS:
 {context}
 
-Question: {question}
+RESPONSE GUIDELINES:
+1. Base your answer strictly on the context above
+2. If the context contains the answer, provide it directly and cite which document(s) you used
+3. If the context is partially relevant, share what you can and note what's missing
+4. If the context doesn't address the question at all, say: "I don't have information about that in my knowledge base. Please contact support@techflow.com for assistance."
+5. Never make up information, policies, or procedures not in the context
+6. For pricing or policy questions, quote exact figures/terms from the documents
 
-Answer:"""
+QUESTION: {question}
+
+ANSWER:"""
         
         print("🤖 Generating response using retrieved context...")
         

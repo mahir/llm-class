@@ -18,7 +18,7 @@ The repository is split into weekly modules so you can focus on one capability a
 
 | Week | Focus | Key Scripts |
 | --- | --- | --- |
-| Week 3 | Local Ollama workflows (retrieval, image, batching) | `week3/simple-rag/simple-rag.py`, `week3/simple-rag-v2/mini_rag_ollama.py`, `week3/arxiv-summarizer/arxiv-summarizer.py`, `week3/image-processor/image-processor.py`, `week3/simple-batch/simple-batch.py`, `week3/spanish-tutor-ollama/Modelfile` |
+| Week 3 | Local Ollama workflows (retrieval, image, batching, prompting) | `week3/simple-rag/simple-rag.py`, `week3/simple-rag-v2/mini_rag_ollama.py`, `week3/arxiv-summarizer/arxiv-summarizer.py`, `week3/image-processor/image-processor.py`, `week3/simple-batch/simple-batch.py`, `week3/spanish-tutor-ollama/Modelfile`, `week3/prompting-techniques/prompting_techniques.py` |
 | Week 4 | Evaluation & structured output (Ollama + OpenAI) | `week4/structured-output/structured_output.py`, `week4/structured-output/structured_output_complex.py`, `week4/openai-api/eval.py`, `week4/openai-api/eval2.py`, `week4/openai-api/test.py`, `week4/openai-api/test_multiple.py`, `week4/llm-judge/ollama_judge.py` |
 
 Each directory also includes helper modules and cached artifacts that demonstrate common data pipelines (chunking, embedding, evaluation logs, etc.).
@@ -62,6 +62,8 @@ The knowledge base is intentionally tiny and hard-coded in `create_sample_knowle
   - Sends a series of tagging prompts to an Ollama model and writes a timestamped JSON report.
 - **Mini Dense RAG**: `python week3/simple-rag-v2/mini_rag_ollama.py "How do embeddings help a RAG system?"`
   - Builds embeddings with Ollama, computes cosine similarity manually, and prompts a chat model using only retrieved context.
+- **Prompting Techniques**: `python week3/prompting-techniques/prompting_techniques.py --technique all`
+  - Compares 8 prompting strategies on challenging math/reasoning problems; use `--show-prompts` to see exactly what's sent to the LLM and `--list-models` to see available Ollama models.
 - **Structured Output (Ollama)**: `python week4/structured-output/structured_output.py`
   - Forces JSON-only answers for quick entity extraction or planning tasks; swap to the complex version for multi-layer business reports.
 - **Ollama Judge**: `python week4/llm-judge/ollama_judge.py --model-a llama3.1 --model-b qwen2:7b`
