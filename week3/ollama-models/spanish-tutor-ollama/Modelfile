@@ -1,4 +1,4 @@
-FROM mistral:latest
+FROM llama3:latest
 
 # Model parameters
 PARAMETER temperature 0.7
