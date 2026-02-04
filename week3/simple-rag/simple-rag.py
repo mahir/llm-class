@@ -19,10 +19,54 @@ Author: RAG Demo
 """
 
 import json
+import sys
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import requests
+
+
+# -----------------------------
+# Terminal Colors
+# -----------------------------
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+    @classmethod
+    def disable(cls):
+        cls.HEADER = cls.BLUE = cls.CYAN = cls.GREEN = ''
+        cls.YELLOW = cls.RED = cls.BOLD = cls.DIM = cls.RESET = ''
+
+
+if not sys.stdout.isatty():
+    Colors.disable()
+
+
+def print_header(text: str):
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 55}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  {text}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 55}{Colors.RESET}")
+
+
+def print_success(text: str):
+    print(f"{Colors.GREEN}[OK]{Colors.RESET} {text}")
+
+
+def print_error(text: str):
+    print(f"{Colors.RED}[ERROR]{Colors.RESET} {text}")
+
+
+def print_progress(text: str):
+    print(f"{Colors.DIM}>>>{Colors.RESET} {text}")
 
 class SimpleRAG:
     """
@@ -79,8 +123,8 @@ class SimpleRAG:
         # - Values indicate how important that word is to this document
         self.doc_vectors = self.vectorizer.fit_transform(doc_texts)
         
-        print(f"Added {len(documents)} documents to knowledge base")
-        print(f"Vectorizer learned {len(self.vectorizer.vocabulary_)} unique terms")
+        print_success(f"Added {Colors.BOLD}{len(documents)}{Colors.RESET} documents to knowledge base")
+        print(f"  {Colors.DIM}Vectorizer learned {len(self.vectorizer.vocabulary_)} unique terms{Colors.RESET}")
     
     def retrieve(self, query, top_k=2):
         """
@@ -193,21 +237,21 @@ class SimpleRAG:
         Returns:
             str: Generated answer based on retrieved context
         """
-        print(f"\n🔍 Query: {question}")
-        
+        print(f"\n{Colors.CYAN}[QUERY]{Colors.RESET} {Colors.BOLD}{question}{Colors.RESET}")
+
         # STEP 1: RETRIEVAL
         # Search our knowledge base for relevant documents
         retrieved_docs = self.retrieve(question)
-        
+
         # If no relevant documents found, return a helpful message
         if not retrieved_docs:
-            print("❌ No relevant documents found")
+            print_error("No relevant documents found")
             return "I don't have information about that topic in my knowledge base."
-        
+
         # Show user what documents were retrieved (transparency)
-        print(f"📚 Retrieved {len(retrieved_docs)} relevant documents:")
+        print_success(f"Retrieved {Colors.BOLD}{len(retrieved_docs)}{Colors.RESET} relevant documents")
         for i, doc in enumerate(retrieved_docs, 1):
-            print(f"   {i}. {doc['title']} (similarity: {doc['similarity']:.3f})")
+            print(f"   {Colors.CYAN}{i}.{Colors.RESET} {doc['title']} {Colors.DIM}(similarity: {doc['similarity']:.3f}){Colors.RESET}")
         
         # STEP 2: AUGMENTATION  
         # Combine retrieved documents into context for the LLM
@@ -245,8 +289,8 @@ QUESTION: {question}
 
 ANSWER:"""
         
-        print("🤖 Generating response using retrieved context...")
-        
+        print_progress("Generating response using retrieved context...")
+
         # Send the augmented prompt to the LLM for final response generation
         response = self.generate_with_ollama(prompt)
         return response
@@ -306,19 +350,18 @@ def main():
     3. Provides example queries users can try
     4. Runs an interactive chat loop
     """
-    print("🚀 TechFlow Software RAG Chatbot Demo")
-    print("=" * 50)
-    print("This demo shows how RAG (Retrieval-Augmented Generation) works:")
-    print("1. 🔍 RETRIEVE: Find relevant documents from knowledge base")
-    print("2. 🔗 AUGMENT: Add context to your question")  
-    print("3. 🤖 GENERATE: Create answer using LLM + context")
+    print_header("TechFlow Software RAG Chatbot Demo")
+    print(f"  {Colors.DIM}This demo shows how RAG works:{Colors.RESET}")
+    print(f"  {Colors.CYAN}1.{Colors.RESET} {Colors.BOLD}RETRIEVE{Colors.RESET} - Find relevant documents from knowledge base")
+    print(f"  {Colors.CYAN}2.{Colors.RESET} {Colors.BOLD}AUGMENT{Colors.RESET}  - Add context to your question")
+    print(f"  {Colors.CYAN}3.{Colors.RESET} {Colors.BOLD}GENERATE{Colors.RESET} - Create answer using LLM + context")
     
     # Initialize the RAG system with default model
     # You can change the model name here if needed (e.g., "llama2", "mistral")
     rag = SimpleRAG(ollama_model="llama3.2:latest")
     
     # Load our sample knowledge base
-    print("\n📖 Loading knowledge base...")
+    print_progress("Loading knowledge base...")
     documents = create_sample_knowledge_base()
     rag.add_documents(documents)
     
@@ -332,35 +375,34 @@ def main():
         "How much vacation time do I get?"
     ]
     
-    print(f"\n🎯 Sample queries you can try:")
+    print(f"\n{Colors.BOLD}{Colors.BLUE}Sample queries you can try:{Colors.RESET}")
     for i, query in enumerate(sample_queries, 1):
-        print(f"   {i}. {query}")
-    
-    print(f"\n💡 You can also ask your own questions about TechFlow Software!")
-    print(f"📋 Available topics: pricing, returns, remote work, passwords, system requirements, vacation")
-    print(f"🔍 Watch how the system retrieves relevant documents before generating answers!")
+        print(f"   {Colors.CYAN}{i}.{Colors.RESET} {query}")
+
+    print(f"\n{Colors.DIM}You can also ask your own questions about TechFlow Software!")
+    print(f"Topics: pricing, returns, remote work, passwords, system requirements, vacation{Colors.RESET}")
     
     # Interactive chat loop
     while True:
-        print("\n" + "-" * 50)
-        question = input("❓ Enter your question (or 'quit' to exit): ").strip()
-        
+        print(f"\n{Colors.DIM}{'-' * 50}{Colors.RESET}")
+        question = input(f"{Colors.BOLD}Question{Colors.RESET} (or 'quit'): ").strip()
+
         # Handle exit commands
         if question.lower() in ['quit', 'exit', 'q']:
-            print("👋 Goodbye!")
+            print(f"{Colors.DIM}Goodbye!{Colors.RESET}")
             break
-        
+
         # Skip empty inputs
         if not question:
             continue
-            
+
         # Process the user's query through our RAG pipeline
         try:
             answer = rag.query(question)
-            print(f"\n💬 Answer: {answer}")
+            print(f"\n{Colors.GREEN}{Colors.BOLD}Answer:{Colors.RESET} {answer}")
         except Exception as e:
-            print(f"❌ Error processing query: {e}")
-            print("🔧 Try checking if Ollama is running: 'ollama serve'")
+            print_error(f"Error processing query: {e}")
+            print(f"  {Colors.DIM}Try checking if Ollama is running: 'ollama serve'{Colors.RESET}")
 
 if __name__ == "__main__":
     """
@@ -377,10 +419,10 @@ if __name__ == "__main__":
         import sklearn
         import numpy as np
         import requests
-        print("✅ All required packages found")
+        print_success("All required packages found")
     except ImportError as e:
-        print(f"❌ Missing required package: {e}")
-        print("📦 Install with: pip install scikit-learn numpy requests")
+        print_error(f"Missing required package: {e}")
+        print(f"  {Colors.DIM}Install with: pip install scikit-learn numpy requests{Colors.RESET}")
         exit(1)
     
     # Start the demo

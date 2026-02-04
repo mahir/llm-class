@@ -16,6 +16,57 @@ import requests
 from PIL import Image
 import mimetypes
 
+
+# -----------------------------
+# Terminal Colors
+# -----------------------------
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+    @classmethod
+    def disable(cls):
+        cls.HEADER = cls.BLUE = cls.CYAN = cls.GREEN = ''
+        cls.YELLOW = cls.RED = cls.BOLD = cls.DIM = cls.RESET = ''
+
+
+if not sys.stdout.isatty():
+    Colors.disable()
+
+
+def print_header(text: str):
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 60}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  {text}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 60}{Colors.RESET}")
+
+
+def print_info(label: str, value: str):
+    print(f"  {Colors.BOLD}{label}:{Colors.RESET} {value}")
+
+
+def print_success(text: str):
+    print(f"{Colors.GREEN}[OK]{Colors.RESET} {text}")
+
+
+def print_warning(text: str):
+    print(f"{Colors.YELLOW}[!]{Colors.RESET} {text}")
+
+
+def print_error(text: str):
+    print(f"{Colors.RED}[ERROR]{Colors.RESET} {text}")
+
+
+def print_progress(text: str):
+    print(f"{Colors.DIM}>>>{Colors.RESET} {text}")
+
 class OllamaImageProcessor:
     def __init__(self, 
                  model_name: str = "llava:7b", 
@@ -43,7 +94,7 @@ class OllamaImageProcessor:
             with open(image_path, "rb") as image_file:
                 return base64.b64encode(image_file.read()).decode('utf-8')
         except Exception as e:
-            print(f"Error encoding image {image_path}: {e}")
+            print_error(f"Error encoding image {image_path}: {e}")
             return None
     
     def get_image_info(self, image_path: str) -> Dict:
@@ -58,7 +109,7 @@ class OllamaImageProcessor:
                     "size_bytes": os.path.getsize(image_path)
                 }
         except Exception as e:
-            print(f"Error getting image info for {image_path}: {e}")
+            print_error(f"Error getting image info for {image_path}: {e}")
             return {}
     
     def describe_image(self, image_path: str, custom_prompt: str = None) -> Dict:
@@ -91,7 +142,7 @@ class OllamaImageProcessor:
         }
         
         try:
-            print(f"Processing: {os.path.basename(image_path)}...")
+            print_progress(f"Processing: {Colors.BOLD}{os.path.basename(image_path)}{Colors.RESET}")
             
             response = requests.post(
                 self.api_url,
@@ -177,15 +228,15 @@ class OllamaImageProcessor:
                 "summary": {}
             }
         
-        print(f"Found {len(image_files)} image files to process...")
-        
+        print_success(f"Found {Colors.BOLD}{len(image_files)}{Colors.RESET} image files")
+
         # Process each image
         results = []
         successful = 0
         failed = 0
-        
+
         for i, image_path in enumerate(image_files, 1):
-            print(f"Processing {i}/{len(image_files)}: {os.path.basename(image_path)}")
+            print(f"\n{Colors.CYAN}[{i}/{len(image_files)}]{Colors.RESET} {os.path.basename(image_path)}")
             
             # Get image info
             image_info = self.get_image_info(image_path)
@@ -207,10 +258,10 @@ class OllamaImageProcessor:
             
             if result["error"]:
                 failed += 1
-                print(f"  ❌ Failed: {result['error']}")
+                print_error(f"Failed: {result['error']}")
             else:
                 successful += 1
-                print(f"  ✅ Success")
+                print_success("Description extracted")
         
         # Compile final results
         final_results = {
@@ -248,10 +299,10 @@ class OllamaImageProcessor:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             
-            print(f"\n✅ Results saved to: {output_file}")
-            
+            print_success(f"Results saved to: {Colors.BOLD}{output_file}{Colors.RESET}")
+
         except Exception as e:
-            print(f"❌ Error saving JSON file: {e}")
+            print_error(f"Error saving JSON file: {e}")
 
 def main():
     """Command line interface"""
@@ -320,27 +371,26 @@ Examples:
         )
         
         # Print summary
-        print("\n" + "="*50)
-        print("PROCESSING COMPLETE")
-        print("="*50)
-        print(f"Total images: {results['summary']['total_images']}")
-        print(f"Successfully processed: {results['summary']['successfully_processed']}")
-        print(f"Failed to process: {results['summary']['failed_to_process']}")
-        print(f"Success rate: {results['summary']['success_rate']}")
-        
+        print_header("Processing Complete")
+
+        print_info("Total images", str(results['summary']['total_images']))
+        print_info("Successful", f"{Colors.GREEN}{results['summary']['successfully_processed']}{Colors.RESET}")
+        print_info("Failed", f"{Colors.RED if results['summary']['failed_to_process'] > 0 else ''}{results['summary']['failed_to_process']}{Colors.RESET}")
+        print_info("Success rate", f"{Colors.BOLD}{results['summary']['success_rate']}{Colors.RESET}")
+
         if results['summary']['failed_to_process'] > 0:
-            print(f"\nFailed files:")
+            print(f"\n{Colors.YELLOW}Failed files:{Colors.RESET}")
             for result in results['results']:
                 if result['error']:
-                    print(f"  - {result['file_name']}: {result['error']}")
-        
+                    print(f"  {Colors.DIM}-{Colors.RESET} {result['file_name']}: {result['error']}")
+
         return 0 if results['summary']['failed_to_process'] == 0 else 1
-        
+
     except KeyboardInterrupt:
-        print("\n❌ Processing interrupted by user")
+        print(f"\n{Colors.YELLOW}Processing interrupted by user{Colors.RESET}")
         return 1
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print_error(str(e))
         return 1
 
 if __name__ == "__main__":

@@ -53,6 +53,45 @@ from requests.exceptions import RequestException
 
 
 # -----------------------------
+# Terminal Colors
+# -----------------------------
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+    @classmethod
+    def disable(cls):
+        cls.HEADER = cls.BLUE = cls.CYAN = cls.GREEN = ''
+        cls.YELLOW = cls.RED = cls.BOLD = cls.DIM = cls.RESET = ''
+
+
+if not sys.stdout.isatty():
+    Colors.disable()
+
+
+def print_header(text: str):
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 55}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  {text}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 55}{Colors.RESET}")
+
+
+def print_success(text: str):
+    print(f"{Colors.GREEN}[OK]{Colors.RESET} {text}")
+
+
+def print_error(text: str):
+    print(f"{Colors.RED}[ERROR]{Colors.RESET} {text}")
+
+
+# -----------------------------
 # Configuration
 # -----------------------------
 DEFAULT_HOST = "http://localhost:11434"
@@ -493,9 +532,9 @@ def print_chunks(chunks: List[Chunk], verbose: bool = False) -> None:
     """Print chunk information."""
     for chunk in chunks:
         preview = chunk.text[:60].replace('\n', ' ')
-        print(f"  [{chunk.index}] chars {chunk.start_char}-{chunk.end_char} ({len(chunk.text)} chars)")
+        print(f"  {Colors.CYAN}[{chunk.index}]{Colors.RESET} chars {chunk.start_char}-{chunk.end_char} {Colors.DIM}({len(chunk.text)} chars){Colors.RESET}")
         if verbose:
-            print(f"      \"{preview}...\"")
+            print(f"      {Colors.DIM}\"{preview}...\"{Colors.RESET}")
 
 
 def compare_strategies(
@@ -508,22 +547,20 @@ def compare_strategies(
     results = {}
 
     for name, strategy_fn in STRATEGIES.items():
-        print(f"\n{'='*50}")
-        print(f"Strategy: {name.upper()}")
-        print('='*50)
+        print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 50}{Colors.RESET}")
+        print(f"{Colors.BOLD}Strategy: {Colors.YELLOW}{name.upper()}{Colors.RESET}")
+        print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 50}{Colors.RESET}")
 
         chunks = strategy_fn(text, max_chars, overlap)
         results[name] = chunks
 
-        print(f"Created {len(chunks)} chunks")
+        print_success(f"Created {Colors.BOLD}{len(chunks)}{Colors.RESET} chunks")
 
         # Statistics
         sizes = [len(c.text) for c in chunks]
-        print(f"  Min size: {min(sizes)} chars")
-        print(f"  Max size: {max(sizes)} chars")
-        print(f"  Avg size: {sum(sizes) / len(sizes):.0f} chars")
+        print(f"  {Colors.DIM}Min: {min(sizes)} | Max: {max(sizes)} | Avg: {sum(sizes) / len(sizes):.0f} chars{Colors.RESET}")
 
-        print("\nChunks:")
+        print(f"\n{Colors.BOLD}Chunks:{Colors.RESET}")
         print_chunks(chunks, verbose)
 
     return results
@@ -538,34 +575,31 @@ def compare_retrieval(
     verbose: bool = False
 ) -> None:
     """Compare retrieval results across chunking strategies."""
-    print(f"\n{'='*60}")
-    print(f"RETRIEVAL COMPARISON")
-    print(f"Query: \"{query}\"")
-    print('='*60)
+    print_header("Retrieval Comparison")
+    print(f"  {Colors.BOLD}Query:{Colors.RESET} \"{query}\"")
 
     for strategy_name, chunks in all_chunks.items():
-        print(f"\n--- {strategy_name.upper()} ---")
+        print(f"\n{Colors.BOLD}{Colors.YELLOW}--- {strategy_name.upper()} ---{Colors.RESET}")
 
         results = retrieve_top_k(query, chunks, host, emb_model, top_k)
 
         for i, (chunk, score) in enumerate(results, 1):
             preview = chunk.text[:80].replace('\n', ' ')
-            print(f"  {i}. [chunk {chunk.index}] score={score:.4f}")
+            print(f"  {Colors.CYAN}{i}.{Colors.RESET} [chunk {chunk.index}] score={Colors.GREEN}{score:.4f}{Colors.RESET}")
             if verbose:
-                print(f"     \"{preview}...\"")
+                print(f"     {Colors.DIM}\"{preview}...\"{Colors.RESET}")
 
 
 def print_summary(all_chunks: Dict[str, List[Chunk]]) -> None:
     """Print summary comparison table."""
-    print(f"\n{'='*60}")
-    print("SUMMARY")
-    print('='*60)
-    print(f"{'Strategy':<12} {'Chunks':<8} {'Min':<8} {'Max':<8} {'Avg':<8}")
-    print("-"*44)
+    print_header("Summary")
+
+    print(f"  {Colors.BOLD}{'Strategy':<12} {'Chunks':<8} {'Min':<8} {'Max':<8} {'Avg':<8}{Colors.RESET}")
+    print(f"  {Colors.DIM}{'-'*44}{Colors.RESET}")
 
     for name, chunks in all_chunks.items():
         sizes = [len(c.text) for c in chunks]
-        print(f"{name:<12} {len(chunks):<8} {min(sizes):<8} {max(sizes):<8} {sum(sizes)//len(sizes):<8}")
+        print(f"  {name:<12} {Colors.CYAN}{len(chunks):<8}{Colors.RESET} {min(sizes):<8} {max(sizes):<8} {sum(sizes)//len(sizes):<8}")
 
 
 # -----------------------------
@@ -592,19 +626,18 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
 def main(argv: List[str]) -> None:
     args = parse_args(argv)
 
-    print("Semantic Chunking Demo")
-    print("="*40)
-    print(f"Max chars: {args.max_chars}")
-    print(f"Overlap: {args.overlap}")
+    print_header("Semantic Chunking Demo")
+    print(f"  {Colors.BOLD}Max chars:{Colors.RESET} {args.max_chars}")
+    print(f"  {Colors.BOLD}Overlap:{Colors.RESET} {args.overlap}")
 
     # Load document
     if args.input_file:
         with open(args.input_file, 'r') as f:
             text = f.read()
-        print(f"Loaded: {args.input_file} ({len(text)} chars)")
+        print_success(f"Loaded: {Colors.BOLD}{args.input_file}{Colors.RESET} ({len(text)} chars)")
     else:
         text = SAMPLE_DOCUMENT
-        print(f"Using sample document ({len(text)} chars)")
+        print(f"  {Colors.DIM}Using sample document ({len(text)} chars){Colors.RESET}")
 
     # Run chunking
     if args.strategy == "all":
@@ -620,22 +653,20 @@ def main(argv: List[str]) -> None:
         strategy_fn = STRATEGIES[args.strategy]
         chunks = strategy_fn(text, args.max_chars, args.overlap)
 
-        print(f"\nStrategy: {args.strategy}")
-        print(f"Created {len(chunks)} chunks")
-        print("\nChunks:")
+        print(f"\n{Colors.BOLD}Strategy:{Colors.RESET} {Colors.YELLOW}{args.strategy}{Colors.RESET}")
+        print_success(f"Created {Colors.BOLD}{len(chunks)}{Colors.RESET} chunks")
+        print(f"\n{Colors.BOLD}Chunks:{Colors.RESET}")
         print_chunks(chunks, args.verbose)
 
         if args.query:
             assert_ollama_up(args.host)
-            print(f"\n{'='*50}")
-            print(f"RETRIEVAL for: \"{args.query}\"")
-            print('='*50)
+            print_header(f"Retrieval: \"{args.query}\"")
 
             results = retrieve_top_k(args.query, chunks, args.host, args.embed_model, args.top_k)
             for i, (chunk, score) in enumerate(results, 1):
                 preview = chunk.text[:100].replace('\n', ' ')
-                print(f"\n{i}. [chunk {chunk.index}] score={score:.4f}")
-                print(f"   \"{preview}...\"")
+                print(f"\n{Colors.CYAN}{i}.{Colors.RESET} [chunk {chunk.index}] score={Colors.GREEN}{score:.4f}{Colors.RESET}")
+                print(f"   {Colors.DIM}\"{preview}...\"{Colors.RESET}")
 
 
 if __name__ == "__main__":

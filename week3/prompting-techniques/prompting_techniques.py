@@ -61,6 +61,49 @@ from requests.exceptions import RequestException
 
 
 # -----------------------------
+# Terminal Colors
+# -----------------------------
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+    @classmethod
+    def disable(cls):
+        cls.HEADER = cls.BLUE = cls.CYAN = cls.GREEN = ''
+        cls.YELLOW = cls.RED = cls.BOLD = cls.DIM = cls.RESET = ''
+
+
+if not sys.stdout.isatty():
+    Colors.disable()
+
+
+def print_header(text: str):
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 60}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  {text}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 60}{Colors.RESET}")
+
+
+def print_success(text: str):
+    print(f"{Colors.GREEN}[OK]{Colors.RESET} {text}")
+
+
+def print_warning(text: str):
+    print(f"{Colors.YELLOW}[!]{Colors.RESET} {text}")
+
+
+def print_error(text: str):
+    print(f"{Colors.RED}[ERROR]{Colors.RESET} {text}")
+
+
+# -----------------------------
 # Configuration
 # -----------------------------
 DEFAULT_HOST = "http://localhost:11434"
@@ -209,11 +252,11 @@ State the final numerical answer on a line starting with "The answer is"."""
 # -----------------------------
 def print_prompt(prompt: str, technique: str) -> None:
     """Print prompt with visual formatting."""
-    print(f"\n{'─'*60}")
-    print(f"PROMPT ({technique}):")
-    print('─'*60)
-    print(prompt)
-    print('─'*60 + "\n")
+    print(f"\n{Colors.DIM}{'─'*60}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.BLUE}PROMPT ({technique}):{Colors.RESET}")
+    print(f"{Colors.DIM}{'─'*60}{Colors.RESET}")
+    print(f"{Colors.DIM}{prompt}{Colors.RESET}")
+    print(f"{Colors.DIM}{'─'*60}{Colors.RESET}\n")
 
 
 def list_available_models(host: str) -> None:
@@ -223,15 +266,16 @@ def list_available_models(host: str) -> None:
         resp.raise_for_status()
         models = resp.json().get("models", [])
         if not models:
-            print("No models found. Pull a model with: ollama pull llama3.2")
+            print_warning("No models found. Pull a model with: ollama pull llama3.2")
             return
-        print("Available Ollama models:")
+        print(f"\n{Colors.BOLD}{Colors.CYAN}Available Ollama Models{Colors.RESET}")
+        print(f"{Colors.DIM}{'─' * 45}{Colors.RESET}")
         for m in models:
             size = m.get("size", 0)
             size_gb = size / (1024**3) if size else 0
-            print(f"  - {m['name']:<30} ({size_gb:.1f} GB)")
+            print(f"  {Colors.CYAN}-{Colors.RESET} {m['name']:<30} {Colors.DIM}({size_gb:.1f} GB){Colors.RESET}")
     except RequestException as e:
-        print(f"[!] Could not reach Ollama at {host}. Is `ollama serve` running?\n{e}")
+        print_error(f"Could not reach Ollama at {host}. Is `ollama serve` running?\n{e}")
 
 
 def assert_ollama_up(host: str) -> None:
@@ -493,8 +537,11 @@ def evaluate_technique(
         results.append(result)
 
         # Progress indicator
-        status = "[/] correct" if is_correct else "[X] wrong"
-        print(f"  {problem['id']}: expected={expected}, got={predicted} {status}")
+        if is_correct:
+            status = f"{Colors.GREEN}correct{Colors.RESET}"
+        else:
+            status = f"{Colors.RED}wrong{Colors.RESET}"
+        print(f"  {Colors.DIM}{problem['id']}:{Colors.RESET} expected={Colors.BOLD}{expected}{Colors.RESET}, got={Colors.BOLD}{predicted}{Colors.RESET} [{status}]")
 
     accuracy = correct / len(problems) if problems else 0
 
@@ -521,9 +568,9 @@ def run_comparison(
     all_results = []
 
     for technique in techniques:
-        print(f"\n{'='*60}")
-        print(f"Running: {technique.upper()}")
-        print('='*60)
+        print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 60}{Colors.RESET}")
+        print(f"{Colors.BOLD}Running: {Colors.YELLOW}{technique.upper()}{Colors.RESET}")
+        print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 60}{Colors.RESET}")
 
         t0 = time.time()
         result = evaluate_technique(
@@ -534,30 +581,32 @@ def run_comparison(
         result["elapsed_seconds"] = round(elapsed, 2)
         all_results.append(result)
 
-        print(f"\nAccuracy: {result['correct']}/{result['total']} ({result['accuracy']*100:.1f}%)")
-        print(f"Time: {elapsed:.1f}s")
+        accuracy_color = Colors.GREEN if result['accuracy'] >= 0.7 else (Colors.YELLOW if result['accuracy'] >= 0.5 else Colors.RED)
+        print(f"\n{Colors.BOLD}Accuracy:{Colors.RESET} {accuracy_color}{result['correct']}/{result['total']} ({result['accuracy']*100:.1f}%){Colors.RESET}")
+        print(f"{Colors.DIM}Time: {elapsed:.1f}s{Colors.RESET}")
 
     return all_results
 
 
 def print_summary(results: List[Dict]) -> None:
     """Print a summary comparison table."""
-    print("\n" + "="*60)
-    print("SUMMARY COMPARISON")
-    print("="*60)
-    print(f"{'Technique':<20} {'Correct':<10} {'Accuracy':<12} {'Time':<10}")
-    print("-"*52)
+    print_header("Summary Comparison")
+
+    print(f"  {Colors.BOLD}{'Technique':<20} {'Correct':<10} {'Accuracy':<12} {'Time':<10}{Colors.RESET}")
+    print(f"  {Colors.DIM}{'-'*52}{Colors.RESET}")
 
     for r in results:
-        acc_str = f"{r['accuracy']*100:.1f}%"
+        acc_val = r['accuracy']*100
+        acc_color = Colors.GREEN if acc_val >= 70 else (Colors.YELLOW if acc_val >= 50 else Colors.RED)
+        acc_str = f"{acc_color}{acc_val:.1f}%{Colors.RESET}"
         time_str = f"{r['elapsed_seconds']:.1f}s"
-        print(f"{r['technique']:<20} {r['correct']}/{r['total']:<7} {acc_str:<12} {time_str:<10}")
+        print(f"  {r['technique']:<20} {r['correct']}/{r['total']:<7} {acc_str:<22} {Colors.DIM}{time_str:<10}{Colors.RESET}")
 
-    print("-"*52)
+    print(f"  {Colors.DIM}{'-'*52}{Colors.RESET}")
 
     # Find best technique
     best = max(results, key=lambda x: (x['accuracy'], -x['elapsed_seconds']))
-    print(f"\nBest technique: {best['technique']} ({best['accuracy']*100:.1f}% accuracy)")
+    print(f"\n  {Colors.GREEN}Best technique:{Colors.RESET} {Colors.BOLD}{best['technique']}{Colors.RESET} ({best['accuracy']*100:.1f}% accuracy)")
 
 
 # -----------------------------
@@ -592,11 +641,10 @@ def main(argv: List[str]) -> None:
         list_available_models(args.host)
         return
 
-    print("Prompting Techniques Comparison Demo")
-    print("="*40)
-    print(f"Model: {args.model}")
-    print(f"Temperature: {args.temperature}")
-    print(f"Problems: {len(PROBLEMS)}")
+    print_header("Prompting Techniques Comparison")
+    print(f"  {Colors.BOLD}Model:{Colors.RESET} {args.model}")
+    print(f"  {Colors.BOLD}Temperature:{Colors.RESET} {args.temperature}")
+    print(f"  {Colors.BOLD}Problems:{Colors.RESET} {len(PROBLEMS)}")
 
     # Check Ollama
     assert_ollama_up(args.host)

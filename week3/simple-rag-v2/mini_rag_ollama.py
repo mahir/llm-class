@@ -67,6 +67,49 @@ from typing import Dict, List, Tuple, Iterable
 import requests
 from requests.exceptions import RequestException
 
+
+# -----------------------------
+# Terminal Colors
+# -----------------------------
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+    @classmethod
+    def disable(cls):
+        cls.HEADER = cls.BLUE = cls.CYAN = cls.GREEN = ''
+        cls.YELLOW = cls.RED = cls.BOLD = cls.DIM = cls.RESET = ''
+
+
+if not sys.stdout.isatty():
+    Colors.disable()
+
+
+def print_header(text: str):
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  {text}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 70}{Colors.RESET}")
+
+
+def print_success(text: str):
+    print(f"{Colors.GREEN}[OK]{Colors.RESET} {text}")
+
+
+def print_error(text: str):
+    print(f"{Colors.RED}[ERROR]{Colors.RESET} {text}")
+
+
+def print_progress(text: str):
+    print(f"{Colors.DIM}>>>{Colors.RESET} {text}")
+
 # -----------------------------
 # Configuration (CLI overrides most of this)
 # -----------------------------
@@ -365,13 +408,13 @@ def main(argv: List[str]) -> None:
     assert_ollama_up(args.host)
 
     # 2) Build in-memory index from the example documents
-    print(f"Building in-memory vector store (chunks ~{args.chunk} chars)...")
+    print_progress(f"Building in-memory vector store (chunks ~{Colors.BOLD}{args.chunk}{Colors.RESET} chars)")
     t0 = time.time()
     db = build_store(args.host, args.embed_model, args.chunk)
-    print(f"Built {len(db)} chunks in {time.time() - t0:.2f}s")
+    print_success(f"Built {Colors.BOLD}{len(db)}{Colors.RESET} chunks in {time.time() - t0:.2f}s")
 
     # 3) Retrieve + generate
-    print("Retrieving + generating...")
+    print_progress("Retrieving + generating...")
     t1 = time.time()
     out = rag_answer(
         host=args.host,
@@ -384,10 +427,9 @@ def main(argv: List[str]) -> None:
     )
     dt = time.time() - t1
 
-    print("\n" + "=" * 80)
+    print_header("Answer")
     print(out)
-    print("=" * 80)
-    print(f"Took {dt:.2f}s")
+    print(f"\n{Colors.DIM}Took {dt:.2f}s{Colors.RESET}")
 
 if __name__ == "__main__":
     main(sys.argv[1:])

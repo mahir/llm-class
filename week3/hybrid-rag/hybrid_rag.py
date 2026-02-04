@@ -54,6 +54,49 @@ from requests.exceptions import RequestException
 
 
 # -----------------------------
+# Terminal Colors
+# -----------------------------
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+    @classmethod
+    def disable(cls):
+        cls.HEADER = cls.BLUE = cls.CYAN = cls.GREEN = ''
+        cls.YELLOW = cls.RED = cls.BOLD = cls.DIM = cls.RESET = ''
+
+
+if not sys.stdout.isatty():
+    Colors.disable()
+
+
+def print_header(text: str):
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 55}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  {text}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 55}{Colors.RESET}")
+
+
+def print_success(text: str):
+    print(f"{Colors.GREEN}[OK]{Colors.RESET} {text}")
+
+
+def print_error(text: str):
+    print(f"{Colors.RED}[ERROR]{Colors.RESET} {text}")
+
+
+def print_progress(text: str):
+    print(f"{Colors.DIM}>>>{Colors.RESET} {text}")
+
+
+# -----------------------------
 # Configuration
 # -----------------------------
 DEFAULT_HOST = "http://localhost:11434"
@@ -219,24 +262,24 @@ class HybridRAG:
 
     def add_documents(self, documents: Dict[str, str]) -> None:
         """Index documents for both retrieval methods."""
-        print(f"Indexing {len(documents)} documents...")
+        print_progress(f"Indexing {Colors.BOLD}{len(documents)}{Colors.RESET} documents...")
 
         self.doc_ids = list(documents.keys())
         self.doc_texts = [normalize_ws(text) for text in documents.values()]
 
         # Build TF-IDF index
-        print("  Building TF-IDF index...")
+        print(f"  {Colors.DIM}Building TF-IDF index...{Colors.RESET}")
         self.tfidf_matrix = self.tfidf_vectorizer.fit_transform(self.doc_texts)
 
         # Build embedding index
-        print("  Computing embeddings...")
+        print(f"  {Colors.DIM}Computing embeddings...{Colors.RESET}")
         self.embeddings = [
             embed_text(self.host, self.emb_model, text)
             for text in self.doc_texts
         ]
 
-        print(f"  Indexed {len(self.doc_ids)} documents")
-        print(f"  TF-IDF vocabulary: {len(self.tfidf_vectorizer.vocabulary_)} terms")
+        print_success(f"Indexed {Colors.BOLD}{len(self.doc_ids)}{Colors.RESET} documents")
+        print(f"  {Colors.DIM}TF-IDF vocabulary: {len(self.tfidf_vectorizer.vocabulary_)} terms{Colors.RESET}")
 
     def retrieve_keyword(self, query: str, top_k: int) -> List[Tuple[str, str, float]]:
         """TF-IDF based keyword retrieval."""
@@ -388,20 +431,20 @@ def compare_methods(
     results = {}
 
     for method in methods:
-        print(f"\n{'='*50}")
-        print(f"Method: {method.upper()}")
-        print('='*50)
+        print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 50}{Colors.RESET}")
+        print(f"{Colors.BOLD}Method: {Colors.YELLOW}{method.upper()}{Colors.RESET}")
+        print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 50}{Colors.RESET}")
 
         t0 = time.time()
         docs = rag.retrieve(query, method=method, top_k=top_k, expand=expand)
         elapsed = time.time() - t0
 
-        print(f"Retrieved {len(docs)} documents in {elapsed:.2f}s:")
+        print_success(f"Retrieved {Colors.BOLD}{len(docs)}{Colors.RESET} documents in {elapsed:.2f}s")
         for i, (doc_id, text, score) in enumerate(docs, 1):
             preview = text[:80].replace('\n', ' ')
-            print(f"  {i}. [{doc_id}] score={score:.4f}")
+            print(f"  {Colors.CYAN}{i}.{Colors.RESET} [{Colors.BOLD}{doc_id}{Colors.RESET}] score={Colors.GREEN}{score:.4f}{Colors.RESET}")
             if verbose:
-                print(f"     {preview}...")
+                print(f"     {Colors.DIM}{preview}...{Colors.RESET}")
 
         results[method] = {
             "docs": [(doc_id, score) for doc_id, _, score in docs],
@@ -413,27 +456,25 @@ def compare_methods(
 
 def print_comparison_summary(results: Dict) -> None:
     """Print summary showing overlap and differences."""
-    print("\n" + "="*50)
-    print("COMPARISON SUMMARY")
-    print("="*50)
+    print_header("Comparison Summary")
 
     # Gather doc sets
     keyword_docs = set(doc_id for doc_id, _ in results["keyword"]["docs"])
     embedding_docs = set(doc_id for doc_id, _ in results["embedding"]["docs"])
     hybrid_docs = set(doc_id for doc_id, _ in results["hybrid"]["docs"])
 
-    print(f"\nKeyword retrieved:   {keyword_docs}")
-    print(f"Embedding retrieved: {embedding_docs}")
-    print(f"Hybrid retrieved:    {hybrid_docs}")
+    print(f"  {Colors.BOLD}Keyword retrieved:{Colors.RESET}   {keyword_docs}")
+    print(f"  {Colors.BOLD}Embedding retrieved:{Colors.RESET} {embedding_docs}")
+    print(f"  {Colors.BOLD}Hybrid retrieved:{Colors.RESET}    {hybrid_docs}")
 
     # Overlap analysis
     all_overlap = keyword_docs & embedding_docs & hybrid_docs
     keyword_only = keyword_docs - embedding_docs - hybrid_docs
     embedding_only = embedding_docs - keyword_docs - hybrid_docs
 
-    print(f"\nIn all three:        {all_overlap or '{none}'}")
-    print(f"Keyword only:        {keyword_only or '{none}'}")
-    print(f"Embedding only:      {embedding_only or '{none}'}")
+    print(f"\n  {Colors.GREEN}In all three:{Colors.RESET}        {all_overlap or '{none}'}")
+    print(f"  {Colors.YELLOW}Keyword only:{Colors.RESET}        {keyword_only or '{none}'}")
+    print(f"  {Colors.BLUE}Embedding only:{Colors.RESET}      {embedding_only or '{none}'}")
 
 
 # -----------------------------
@@ -461,10 +502,9 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
 def main(argv: List[str]) -> None:
     args = parse_args(argv)
 
-    print("Hybrid RAG Demo")
-    print("="*40)
-    print(f"Query: {args.query}")
-    print(f"Model: {args.gen_model} (gen), {args.embed_model} (emb)")
+    print_header("Hybrid RAG Demo")
+    print(f"  {Colors.BOLD}Query:{Colors.RESET} {args.query}")
+    print(f"  {Colors.BOLD}Model:{Colors.RESET} {args.gen_model} {Colors.DIM}(gen){Colors.RESET}, {args.embed_model} {Colors.DIM}(emb){Colors.RESET}")
 
     # Check Ollama
     assert_ollama_up(args.host)
@@ -485,9 +525,7 @@ def main(argv: List[str]) -> None:
 
         # Generate answer using hybrid results if requested
         if args.generate:
-            print("\n" + "="*50)
-            print("GENERATING ANSWER (using hybrid retrieval)")
-            print("="*50)
+            print_header("Generated Answer (hybrid retrieval)")
             docs = rag.retrieve(args.query, method="hybrid", top_k=args.k)
             answer = rag.generate_answer(args.query, docs)
             print(f"\n{answer}")
@@ -495,16 +533,14 @@ def main(argv: List[str]) -> None:
         # Single method
         docs = rag.retrieve(args.query, method=args.method, top_k=args.k, expand=args.expand_query)
 
-        print(f"\nRetrieved {len(docs)} documents:")
+        print_success(f"Retrieved {Colors.BOLD}{len(docs)}{Colors.RESET} documents")
         for i, (doc_id, text, score) in enumerate(docs, 1):
-            print(f"\n[{i}] {doc_id} (score: {score:.4f})")
+            print(f"\n{Colors.CYAN}[{i}]{Colors.RESET} {Colors.BOLD}{doc_id}{Colors.RESET} {Colors.DIM}(score: {score:.4f}){Colors.RESET}")
             if args.verbose:
-                print(f"    {text[:200]}...")
+                print(f"    {Colors.DIM}{text[:200]}...{Colors.RESET}")
 
         if args.generate:
-            print("\n" + "="*50)
-            print("GENERATED ANSWER")
-            print("="*50)
+            print_header("Generated Answer")
             answer = rag.generate_answer(args.query, docs)
             print(f"\n{answer}")
 

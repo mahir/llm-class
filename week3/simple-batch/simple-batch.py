@@ -10,7 +10,47 @@ tags from product descriptions, analyzing reviews, etc.
 import requests
 import time
 import json
+import sys
 from datetime import datetime
+
+
+# -----------------------------
+# Terminal Colors
+# -----------------------------
+class Colors:
+    """ANSI color codes for terminal output"""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+    @classmethod
+    def disable(cls):
+        cls.HEADER = cls.BLUE = cls.CYAN = cls.GREEN = ''
+        cls.YELLOW = cls.RED = cls.BOLD = cls.DIM = cls.RESET = ''
+
+
+if not sys.stdout.isatty():
+    Colors.disable()
+
+
+def print_header(text: str):
+    print(f"\n{Colors.BOLD}{Colors.CYAN}{'=' * 60}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}  {text}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'=' * 60}{Colors.RESET}")
+
+
+def print_success(text: str):
+    print(f"{Colors.GREEN}[OK]{Colors.RESET} {text}")
+
+
+def print_error(text: str):
+    print(f"{Colors.RED}[ERROR]{Colors.RESET} {text}")
 
 def ask_ollama(prompt, model="llama3.2"):
     """Send a single prompt to Ollama and get response"""
@@ -60,36 +100,36 @@ def save_to_json(results, product_descriptions, filename=None):
     try:
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(output_data, f, indent=2, ensure_ascii=False)
-        print(f"\n✓ Results saved to: {filename}")
+        print_success(f"Results saved to: {Colors.BOLD}{filename}{Colors.RESET}")
         return filename
     except Exception as e:
-        print(f"\n✗ Error saving to JSON: {e}")
+        print_error(f"Error saving to JSON: {e}")
         return None
 
 def process_batch(prompts, model="llama3.2"):
     """Process a list of prompts"""
     results = []
-    
-    print(f"Processing {len(prompts)} prompts...")
-    print("-" * 40)
-    
+
+    print(f"\n{Colors.BOLD}Processing {len(prompts)} prompts...{Colors.RESET}")
+    print(f"{Colors.DIM}{'-' * 50}{Colors.RESET}")
+
     for i, prompt in enumerate(prompts, 1):
-        print(f"{i}/{len(prompts)}: Processing...")
-        
+        print(f"{Colors.CYAN}[{i}/{len(prompts)}]{Colors.RESET} Processing...")
+
         start_time = time.time()
         response = ask_ollama(prompt, model)
         end_time = time.time()
-        
+
         results.append({
             "prompt": prompt,
             "response": response,
             "time": round(end_time - start_time, 2)
         })
-        
-        print(f"✓ Done in {results[-1]['time']}s")
-        print(f"Response: {response[:100]}{'...' if len(response) > 100 else ''}")
-        print("-" * 40)
-    
+
+        print_success(f"Done in {Colors.BOLD}{results[-1]['time']}s{Colors.RESET}")
+        print(f"  {Colors.DIM}Response: {response[:100]}{'...' if len(response) > 100 else ''}{Colors.RESET}")
+        print(f"{Colors.DIM}{'-' * 50}{Colors.RESET}")
+
     return results
 
 def main():
@@ -128,22 +168,20 @@ def main():
     json_filename = save_to_json(results, product_descriptions)
     
     # Print summary
-    print("\n" + "="*50)
-    print("SUMMARY")
-    print("="*50)
-    
+    print_header("Summary")
+
     total_time = sum(r["time"] for r in results)
-    print(f"Total prompts: {len(results)}")
-    print(f"Total time: {total_time:.2f} seconds")
-    print(f"Average time: {total_time/len(results):.2f} seconds")
-    
+    print(f"  {Colors.BOLD}Total prompts:{Colors.RESET} {len(results)}")
+    print(f"  {Colors.BOLD}Total time:{Colors.RESET} {total_time:.2f} seconds")
+    print(f"  {Colors.BOLD}Average time:{Colors.RESET} {total_time/len(results):.2f} seconds")
+
     # Print all results in a clean format
-    print("\nEXTRACTED TAGS:")
-    print("="*50)
+    print(f"\n{Colors.BOLD}{Colors.BLUE}Extracted Tags{Colors.RESET}")
+    print(f"{Colors.DIM}{'─' * 50}{Colors.RESET}")
     for i, (desc, result) in enumerate(zip(product_descriptions, results), 1):
-        print(f"\n{i}. Product: {desc[:60]}...")
-        print(f"   Tags: {result['response']}")
-        print(f"   Time: {result['time']}s")
+        print(f"\n{Colors.CYAN}{i}.{Colors.RESET} {Colors.BOLD}Product:{Colors.RESET} {desc[:60]}...")
+        print(f"   {Colors.GREEN}Tags:{Colors.RESET} {result['response']}")
+        print(f"   {Colors.DIM}Time: {result['time']}s{Colors.RESET}")
 
 if __name__ == "__main__":
     main()
