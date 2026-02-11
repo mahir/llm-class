@@ -1,10 +1,21 @@
 import os
+from dotenv import load_dotenv
 from openai import OpenAI
+
+load_dotenv()  # local .env first
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '..', '.env'))  # fallback to root
+import argparse
 import json
 import jsonschema
 import time
 from typing import Dict, List, Optional
 from dataclasses import dataclass
+
+MODELS = {
+    "advanced": {"id": "gpt-5", "description": "GPT-5 — most capable, $1.25/M input"},
+    "standard": {"id": "gpt-4o-mini", "description": "GPT-4o Mini — balanced, $0.15/M input"},
+    "cheap": {"id": "gpt-4.1-nano", "description": "GPT-4.1 Nano — cheapest, $0.10/M input"},
+}
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
@@ -153,15 +164,17 @@ class TicketTriager:
             try:
                 prompt = self._build_prompt(email_text, error_msg)
                 
-                resp = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
-                    response_format={
+                kwargs = {
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "response_format": {
                         "type": "json_schema",
                         "json_schema": self.schema,
                     },
-                    temperature=0.1  # Lower temperature for more consistent results
-                )
+                }
+                if not self.model.startswith("gpt-5"):
+                    kwargs["temperature"] = 0.1
+                resp = self.client.chat.completions.create(**kwargs)
 
                 raw_response = resp.choices[0].message.content
                 
@@ -188,7 +201,8 @@ class TicketTriager:
                 error_msg = f"Unexpected error: {str(e)}"
             
             if attempt < max_retries:
-                print(f"Attempt {attempt + 1} failed, retrying in 1 second...")
+                print(f"Attempt {attempt + 1} failed: {error_msg}")
+                print("Retrying in 1 second...")
                 time.sleep(1)
         
         # All retries failed
@@ -294,24 +308,34 @@ def print_summary(results: List[Dict]):
 
 def main():
     """Main function to demonstrate the enhanced triage system"""
+    parser = argparse.ArgumentParser(description="Customer Support Ticket Triage System")
+    parser.add_argument(
+        "--model", choices=MODELS.keys(), default="standard",
+        help="Model tier: advanced (gpt-5), standard (gpt-4o-mini), cheap (gpt-4.1-nano)"
+    )
+    args = parser.parse_args()
+
+    model_info = MODELS[args.model]
     print("🎫 Enhanced Customer Support Ticket Triage System")
     print("="*60)
-    
+    print(f"Model: {model_info['id']} ({model_info['description']})")
+    print("="*60)
+
     # Initialize the triager
-    triager = TicketTriager(client, TICKET_SCHEMA)
-    
+    triager = TicketTriager(client, TICKET_SCHEMA, model=model_info["id"])
+
     # Process all test emails
     results = triager.batch_process(TEST_EMAILS)
-    
+
     # Print summary
     print_summary(results)
-    
+
     # Demonstrate single email processing
     separator = "=" * 60
     print(f"\n{separator}")
     print("SINGLE EMAIL EXAMPLE")
     print(separator)
-    
+
     single_result = triager.triage_with_retry(TEST_EMAILS[0]['email'])
     if single_result.success:
         print("Structured ticket data:")

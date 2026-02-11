@@ -30,6 +30,7 @@ python week4/04-llm-eval/llm_eval.py                    # Rubric-based eval
 python week4/04-llm-eval/llm_eval.py --models llama3.2 llama3.1  # Compare models
 python week4/05-rag-eval/rag_eval.py                     # RAG pipeline eval
 python week4/05-rag-eval/rag_eval.py --k 1 3 5           # Compare retrieval depths
+python week4/06-mcp-server/server.py                     # MCP server (stdio)
 ```
 
 ## Architecture
@@ -52,6 +53,7 @@ python week4/05-rag-eval/rag_eval.py --k 1 3 5           # Compare retrieval dep
 - `03-openai-api/` - OpenAI structured output with JSON schema validation and retry logic
 - `04-llm-eval/` - Rubric-based LLM evaluation with LLM-as-judge (10 tasks, 5 categories)
 - `05-rag-eval/` - RAG pipeline evaluation: retrieval metrics (precision, recall, MRR) + answer quality (faithfulness, relevance)
+- `06-mcp-server/` - MCP server exposing engineering docs as tools for Claude Desktop/Claude Code (TF-IDF search, no Ollama needed)
 
 ## External Services
 
