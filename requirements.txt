@@ -4,3 +4,5 @@ requests
 PyPDF2
 pillow
 feedparser
+openai
+jsonschema

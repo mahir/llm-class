@@ -5,13 +5,13 @@ A custom Ollama model configured as an interactive Spanish language tutor named 
 ## Prerequisites
 
 - [Ollama](https://ollama.ai/) installed and running
-- Base model pulled: `ollama pull deepseek-r1`
+- Base model pulled: `ollama pull llama3`
 
 ## Setup
 
 1. **Create the custom model:**
    ```bash
-   cd week3/spanish-tutor-ollama
+   cd week3/10-ollama-models/spanish-tutor-ollama
    ollama create spanish-tutor -f Modelfile
    ```
 
@@ -62,7 +62,7 @@ Is this sentence correct? "Yo soy tiene hambre"
 
 Edit the `Modelfile` to adjust:
 
-- **Base model**: Change `FROM deepseek-r1:latest` to another model
+- **Base model**: Change `FROM llama3:latest` to another model
 - **Temperature**: Higher (0.8-1.0) for creative responses, lower (0.3-0.5) for more consistent teaching
 - **System prompt**: Modify the tutor's personality or focus areas
 

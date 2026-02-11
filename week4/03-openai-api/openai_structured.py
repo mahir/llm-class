@@ -1,3 +1,4 @@
+import os
 from openai import OpenAI
 import json
 import jsonschema
@@ -5,8 +6,7 @@ import time
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 
-client = OpenAI(api_key="")
-# or use env var: export OPENAI_API_KEY="..."
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 TICKET_SCHEMA = {
     "name": "SupportTicket",

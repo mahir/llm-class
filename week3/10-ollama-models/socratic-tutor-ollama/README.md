@@ -17,7 +17,7 @@ Instead of providing answers directly, this tutor:
 ollama pull phi3.5
 
 # Create the tutor
-cd week3/socratic-tutor-ollama
+cd week3/10-ollama-models/socratic-tutor-ollama
 ollama create socratic-tutor -f Modelfile
 
 # Start learning

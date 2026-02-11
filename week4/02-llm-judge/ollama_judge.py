@@ -116,8 +116,8 @@ class OllamaClient:
 class ModelJudge:
     """Judges and compares responses from different models."""
     
-    def __init__(self, ollama_client: OllamaClient, 
-                 judge_model: str = "qwen3:32b"):
+    def __init__(self, ollama_client: OllamaClient,
+                 judge_model: str = "llama3.2"):
         self.client = ollama_client
         self.judge_model = judge_model
     
@@ -173,11 +173,6 @@ Replace X and Y with scores from 1-10. Be decisive in your evaluation."""
         winner = "Tie"
         reasoning = ""
         scores = {response_a.model: 5, response_b.model: 5}
-        
-        # Debug: Print raw judgment for troubleshooting
-        print(f"\n🔍 DEBUG - Raw judge response:")
-        print(f"'{judgment_text}'")
-        print("-" * 40)
         
         # Try structured parsing first
         lines = judgment_text.strip().split('\n')
@@ -253,7 +248,7 @@ class ModelComparator:
         self.client = OllamaClient(ollama_url)
         self.judge = None
     
-    def setup_judge(self, judge_model: str = "qwen3:32b") -> bool:
+    def setup_judge(self, judge_model: str = "llama3.2") -> bool:
         """Setup the judge model."""
         available_models = self.client.list_models()
         if judge_model not in available_models:
@@ -349,11 +344,11 @@ class ModelComparator:
 def main():
     """Example usage and CLI interface."""
     parser = argparse.ArgumentParser(description="Compare two Ollama models")
-    parser.add_argument("--model-a", default="gemma3:1b", 
+    parser.add_argument("--model-a", default="llama3.2",
                        help="First model to compare")
-    parser.add_argument("--model-b", default="qwen3:4b", 
+    parser.add_argument("--model-b", default="llama3.1",
                        help="Second model to compare")
-    parser.add_argument("--judge", default="qwen3:32b", 
+    parser.add_argument("--judge", default="llama3.2",
                        help="Model to use as judge")
     parser.add_argument("--prompt", 
                        help="Prompt to test both models with")

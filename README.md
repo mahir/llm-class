@@ -14,12 +14,12 @@ Sample code for the "Business Applications of Large Language Models" course (IEO
 - [License](#license)
 
 ## Project Layout
-The repository is split into weekly modules so you can focus on one capability at a time. The table below highlights the primary entry points.
+The repository is split into weekly modules so you can focus on one capability at a time. Directories are numbered in suggested learning order.
 
 | Week | Focus | Key Scripts |
 | --- | --- | --- |
-| Week 3 | Local Ollama workflows (retrieval, image, batching, prompting) | `week3/simple-rag/simple-rag.py`, `week3/simple-rag-v2/mini_rag_ollama.py`, `week3/arxiv-summarizer/arxiv-summarizer.py`, `week3/image-processor/image-processor.py`, `week3/simple-batch/simple-batch.py`, `week3/spanish-tutor-ollama/Modelfile`, `week3/prompting-techniques/prompting_techniques.py` |
-| Week 4 | Evaluation & structured output (Ollama + OpenAI) | `week4/structured-output/structured_output.py`, `week4/structured-output/structured_output_complex.py`, `week4/openai-api/eval.py`, `week4/openai-api/eval2.py`, `week4/openai-api/test.py`, `week4/openai-api/test_multiple.py`, `week4/llm-judge/ollama_judge.py` |
+| Week 3 | Local Ollama workflows (retrieval, image, batching, prompting) | `week3/01-simple-batch/`, `week3/02-prompting-techniques/`, `week3/03-tfidf-rag/`, `week3/04-embedding-rag/`, `week3/05-semantic-chunking/`, `week3/06-hybrid-rag/`, `week3/07-arxiv-summarizer/`, `week3/08-image-processor/`, `week3/09-fastapi-rag/`, `week3/10-ollama-models/` |
+| Week 4 | Evaluation & structured output (Ollama + OpenAI) | `week4/01-structured-output/`, `week4/02-llm-judge/`, `week4/03-openai-api/` |
 
 Each directory also includes helper modules and cached artifacts that demonstrate common data pipelines (chunking, embedding, evaluation logs, etc.).
 
@@ -28,7 +28,7 @@ Each directory also includes helper modules and cached artifacts that demonstrat
 - `pip install -r requirements.txt`
 - [Ollama](https://ollama.com/download) installed and running locally via `ollama serve`
 - An Ollama model pulled to your machine (default: `ollama pull llama3.2`)
-- `pip install openai jsonschema` (needed for the week4 `openai-api/` workflows)
+- All week4 dependencies (openai, jsonschema) are included in `requirements.txt`
 
 ## Quick Start
 1. (Optional) create and activate a virtual environment: `python3 -m venv .venv && source .venv/bin/activate`
@@ -36,7 +36,7 @@ Each directory also includes helper modules and cached artifacts that demonstrat
 3. (Optional) verify Ollama connectivity: `curl http://localhost:11434/api/tags`
 4. Start Ollama in another terminal: `ollama serve`
 5. Pull the default model if needed: `ollama pull llama3.2`
-6. Run the default RAG demo from the repo root: `python week3/simple-rag/simple-rag.py`
+6. Run the default RAG demo from the repo root: `python week3/03-tfidf-rag/simple-rag.py`
 
 The script prints sample questions, waits for your input, shows which FAQ entries it retrieved, and returns a grounded answer from the local model.
 
@@ -54,30 +54,51 @@ The script prints sample questions, waits for your input, shows which FAQ entrie
 The knowledge base is intentionally tiny and hard-coded in `create_sample_knowledge_base()` so you can focus on observing the RAG pipeline without extra setup.
 
 ## Additional Demos
-- **ArXiv Summarizer**: `python week3/arxiv-summarizer/arxiv-summarizer.py 2103.00020 --type technical`
-  - Downloads PDFs, caches them under `week3/arxiv-summarizer/arxiv_cache/`, extracts text, and produces multiple summary styles (feedparser is bundled in `requirements.txt` for search mode).
-- **Image Processor**: `python week3/image-processor/image-processor.py week3/image-processor/images -m "llava:7b"`
-  - Iterates through images, collects metadata via Pillow, and asks a vision-capable model for descriptions; results are saved to JSON.
-- **Simple Batch**: `python week3/simple-batch/simple-batch.py`
+- **Simple Batch**: `python week3/01-simple-batch/simple-batch.py`
   - Sends a series of tagging prompts to an Ollama model and writes a timestamped JSON report.
-- **Mini Dense RAG**: `python week3/simple-rag-v2/mini_rag_ollama.py "How do embeddings help a RAG system?"`
-  - Builds embeddings with Ollama, computes cosine similarity manually, and prompts a chat model using only retrieved context.
-- **Prompting Techniques**: `python week3/prompting-techniques/prompting_techniques.py --technique all`
+- **Prompting Techniques**: `python week3/02-prompting-techniques/prompting_techniques.py --technique all`
   - Compares 8 prompting strategies on challenging math/reasoning problems; use `--show-prompts` to see exactly what's sent to the LLM and `--list-models` to see available Ollama models.
-- **Structured Output (Ollama)**: `python week4/structured-output/structured_output.py`
-  - Forces JSON-only answers for quick entity extraction or planning tasks; swap to the complex version for multi-layer business reports.
-- **Ollama Judge**: `python week4/llm-judge/ollama_judge.py --model-a llama3.1 --model-b qwen2:7b`
+- **TF-IDF RAG**: `python week3/03-tfidf-rag/simple-rag.py`
+  - Interactive RAG chatbot using TF-IDF retrieval over a hardcoded FAQ knowledge base.
+- **Embedding RAG**: `python week3/04-embedding-rag/mini_rag_ollama.py "How do embeddings help a RAG system?"`
+  - Builds dense vector embeddings with Ollama, computes cosine similarity manually, and prompts a chat model using only retrieved context.
+- **Semantic Chunking**: `python week3/05-semantic-chunking/semantic_chunker.py`
+  - Compares 4 chunking strategies (character, sentence, paragraph, section) and their impact on retrieval quality.
+- **Hybrid RAG**: `python week3/06-hybrid-rag/hybrid_rag.py`
+  - Combines keyword (TF-IDF) and dense (embedding) retrieval using Reciprocal Rank Fusion.
+- **ArXiv Summarizer**: `python week3/07-arxiv-summarizer/arxiv-summarizer.py 2103.00020 --type technical`
+  - Downloads PDFs, caches them under `week3/07-arxiv-summarizer/arxiv_cache/`, extracts text, and produces multiple summary styles.
+- **Image Processor**: `python week3/08-image-processor/image-processor.py week3/08-image-processor/images -m "llava:7b"`
+  - Iterates through images, collects metadata via Pillow, and asks a vision-capable model for descriptions; results are saved to JSON.
+- **FastAPI RAG**: `python week3/09-fastapi-rag/app.py`
+  - Serves a RAG pipeline as a REST API using FastAPI + LlamaIndex + Ollama.
+- **Ollama Models**: `week3/10-ollama-models/`
+  - Custom Ollama model personalities via Modelfiles (Spanish tutor, Socratic tutor, and 3 personality archetypes).
+- **Structured Output (Ollama)**: `python week4/01-structured-output/structured_output.py`
+  - Forces JSON-only answers for entity extraction, planning, and complex business analysis—progresses from simple to deeply nested schemas.
+- **Ollama Judge**: `python week4/02-llm-judge/ollama_judge.py --model-a llama3.2 --model-b llama3.1`
   - Compares outputs from two models and requests a third model to score and explain the winning answer; ideal for rapid regression testing.
-- **OpenAI Sentiment Eval**: `python week4/openai-api/eval2.py`
-  - Runs an automated evaluation loop against a toy sentiment dataset; set `OPENAI_API_KEY` before executing.
-- **Support Ticket Triage**: `python week4/openai-api/test_multiple.py`
+- **Support Ticket Triage**: `python week4/03-openai-api/openai_structured.py`
   - Validates JSON-formatted answers against a schema and retries until the model produces well-formed tickets.
 
 ### Suggested Learning Path
-1. Run the Week 3 simple RAG demo to understand the baseline retrieval loop.
-2. Experiment with the dense RAG variant or the ArXiv summarizer to explore more advanced retrieval options.
-3. Move to Week 4 structured output scripts to practice enforcing JSON responses and schema validation.
-4. Finish by benchmarking or judging models with the Ollama or OpenAI evaluation workflows.
+
+**Week 3 — Local Ollama Workflows (follow the numbered directories):**
+1. `01-simple-batch/` — Learn the Ollama API basics (send prompt, get response)
+2. `02-prompting-techniques/` — See how prompt engineering affects output quality
+3. `03-tfidf-rag/` — Understand TF-IDF retrieval-augmented generation
+4. `04-embedding-rag/` — Upgrade to dense vector embeddings for retrieval
+5. `05-semantic-chunking/` — Compare chunking strategies and their impact on RAG
+6. `06-hybrid-rag/` — Combine keyword + dense retrieval for best results
+7. `07-arxiv-summarizer/` — Apply RAG to a real-world task (research papers)
+8. `08-image-processor/` — Work with vision models (llava)
+9. `09-fastapi-rag/` — Serve a RAG pipeline as a REST API
+10. `10-ollama-models/` — Build custom model personalities via Modelfiles
+
+**Week 4 — Evaluation & Structured Output:**
+1. `01-structured-output/` — Enforce JSON responses from Ollama (simple → complex)
+2. `02-llm-judge/` — Compare two models using a third as judge
+3. `03-openai-api/` — OpenAI structured output with schema validation and retry logic
 
 ## Customizing & Extending
 - Swap in different Ollama models by editing the constructor arguments (e.g., `SimpleRAG(ollama_model="model-name")`) or passing CLI flags such as `--model`.
@@ -86,7 +107,7 @@ The knowledge base is intentionally tiny and hard-coded in `create_sample_knowle
 - Adapt the CLI scripts into your own workflows (REST endpoints, scheduled batch jobs, UI integrations) by reusing the underlying classes.
 
 ## OpenAI API Setup
-- Set `OPENAI_API_KEY` in your shell (`export OPENAI_API_KEY="sk-..."`) before running anything in `week4/openai-api/`.
+- Set `OPENAI_API_KEY` in your shell (`export OPENAI_API_KEY="sk-..."`) before running anything in `week4/03-openai-api/`.
 - Optional but recommended: set `OPENAI_BASE_URL` if you are proxying requests through a gateway or Azure OpenAI deployment.
 - Pick lightweight models (`gpt-4o-mini`, `gpt-5-nano`, etc.) if you want faster iteration; adjust the script defaults as needed.
 - The evaluation and ticket-triage scripts write JSON artifacts next to the source so you can diff results across runs. Clean up old results if you want a fresh run.
