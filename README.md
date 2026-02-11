@@ -19,7 +19,7 @@ The repository is split into weekly modules so you can focus on one capability a
 | Week | Focus | Key Scripts |
 | --- | --- | --- |
 | Week 3 | Local Ollama workflows (retrieval, image, batching, prompting) | `week3/01-simple-batch/`, `week3/02-prompting-techniques/`, `week3/03-tfidf-rag/`, `week3/04-embedding-rag/`, `week3/05-semantic-chunking/`, `week3/06-hybrid-rag/`, `week3/07-arxiv-summarizer/`, `week3/08-image-processor/`, `week3/09-fastapi-rag/`, `week3/10-ollama-models/` |
-| Week 4 | Evaluation & structured output (Ollama + OpenAI) | `week4/01-structured-output/`, `week4/02-llm-judge/`, `week4/03-openai-api/` |
+| Week 4 | Evaluation & structured output (Ollama + OpenAI) | `week4/01-structured-output/`, `week4/02-llm-judge/`, `week4/03-openai-api/`, `week4/04-llm-eval/`, `week4/05-rag-eval/` |
 
 Each directory also includes helper modules and cached artifacts that demonstrate common data pipelines (chunking, embedding, evaluation logs, etc.).
 
@@ -80,6 +80,10 @@ The knowledge base is intentionally tiny and hard-coded in `create_sample_knowle
   - Compares outputs from two models and requests a third model to score and explain the winning answer; ideal for rapid regression testing.
 - **Support Ticket Triage**: `python week4/03-openai-api/openai_structured.py`
   - Validates JSON-formatted answers against a schema and retries until the model produces well-formed tickets.
+- **LLM Evaluation**: `python week4/04-llm-eval/llm_eval.py`
+  - Rubric-based evaluation of LLM output quality across 5 categories (factual, reasoning, summarization, extraction, creative) using LLM-as-judge scoring; supports multi-model comparison.
+- **RAG Evaluation**: `python week4/05-rag-eval/rag_eval.py`
+  - Evaluates RAG retrieval quality (precision@k, recall@k, MRR) and answer quality (faithfulness, relevance) over a fictional company knowledge base; compare k values and chunk sizes.
 
 ### Suggested Learning Path
 
@@ -99,6 +103,8 @@ The knowledge base is intentionally tiny and hard-coded in `create_sample_knowle
 1. `01-structured-output/` — Enforce JSON responses from Ollama (simple → complex)
 2. `02-llm-judge/` — Compare two models using a third as judge
 3. `03-openai-api/` — OpenAI structured output with schema validation and retry logic
+4. `04-llm-eval/` — Rubric-based LLM evaluation with LLM-as-judge (5 categories, 10 tasks)
+5. `05-rag-eval/` — RAG pipeline evaluation: retrieval metrics + answer quality scoring
 
 ## Customizing & Extending
 - Swap in different Ollama models by editing the constructor arguments (e.g., `SimpleRAG(ollama_model="model-name")`) or passing CLI flags such as `--model`.

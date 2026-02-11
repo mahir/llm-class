@@ -26,6 +26,10 @@ python week3/08-image-processor/image-processor.py week3/08-image-processor/imag
 python week4/01-structured-output/structured_output.py
 python week4/02-llm-judge/ollama_judge.py --model-a llama3.2 --model-b llama3.1
 python week4/03-openai-api/openai_structured.py  # Requires OPENAI_API_KEY
+python week4/04-llm-eval/llm_eval.py                    # Rubric-based eval
+python week4/04-llm-eval/llm_eval.py --models llama3.2 llama3.1  # Compare models
+python week4/05-rag-eval/rag_eval.py                     # RAG pipeline eval
+python week4/05-rag-eval/rag_eval.py --k 1 3 5           # Compare retrieval depths
 ```
 
 ## Architecture
@@ -46,6 +50,8 @@ python week4/03-openai-api/openai_structured.py  # Requires OPENAI_API_KEY
 - `01-structured-output/` - JSON schema enforcement via Ollama's `format: "json"`
 - `02-llm-judge/` - Model comparison with judge evaluation and score parsing
 - `03-openai-api/` - OpenAI structured output with JSON schema validation and retry logic
+- `04-llm-eval/` - Rubric-based LLM evaluation with LLM-as-judge (10 tasks, 5 categories)
+- `05-rag-eval/` - RAG pipeline evaluation: retrieval metrics (precision, recall, MRR) + answer quality (faithfulness, relevance)
 
 ## External Services
 
