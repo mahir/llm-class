@@ -67,7 +67,14 @@ class OllamaClient:
             response = self.session.get(f"{self.base_url}/api/tags")
             response.raise_for_status()
             models = response.json().get('models', [])
-            return [model['name'] for model in models]
+            names = set()
+            for model in models:
+                name = model['name']
+                names.add(name)
+                # Also add base name without :latest so "llama3.2" matches "llama3.2:latest"
+                if name.endswith(':latest'):
+                    names.add(name.removesuffix(':latest'))
+            return sorted(names)
         except requests.RequestException as e:
             print(f"Error fetching models: {e}")
             return []
