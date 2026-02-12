@@ -1,0 +1,70 @@
+{
+  "metadata": {
+    "source_directory": "./images",
+    "processed_at": "2026-02-11T18:19:20.130488",
+    "model_used": "llava:7b",
+    "total_files": 3,
+    "successful": 3,
+    "failed": 0,
+    "custom_prompt": null
+  },
+  "results": [
+    {
+      "file_path": "images/image-1.jpg",
+      "file_name": "image-1.jpg",
+      "file_size_bytes": 406646,
+      "processed_at": "2026-02-11T18:18:58.914985",
+      "image_info": {
+        "width": 1280,
+        "height": 853,
+        "format": "JPEG",
+        "mode": "RGB",
+        "size_bytes": 406646
+      },
+      "description": "This is a photograph depicting a holiday-themed scene with a Christmas tree in the background. In the foreground, there's a small model car placed on top of a red gift box, which sits atop a larger present wrapped with gold ribbon. The car appears to be an old-fashioned style and is positioned centrally in the image. The gift boxes are adorned with holiday decorations, including tinsel and what seem to be a small wreath.\n\nThe background features festive elements such as Christmas trees and lights, which contribute to the warm, celebratory atmosphere of the scene. The colors visible in the image include red from the gifts, green from the trees, and the metallic sheen of the car and tinsel.\n\nThe mood of the photo is cheerful and festive, evoking a sense of joy and celebration commonly associated with the holiday season. The composition creates a layered effect, with the car on top of the smaller gift box, then on top of the larger one, leading the viewer's eye through the scene. The focus is sharp on the model car and the immediate gifts, while the background elements are slightly blurred, drawing attention to the central subjects.",
+      "model_used": "llava:7b",
+      "prompt_used": "Describe this image in detail, including objects, people, colors, composition, and mood.",
+      "error": null
+    },
+    {
+      "file_path": "images/image-1021.jpg",
+      "file_name": "image-1021.jpg",
+      "file_size_bytes": 165378,
+      "processed_at": "2026-02-11T18:19:11.717740",
+      "image_info": {
+        "width": 1280,
+        "height": 853,
+        "format": "JPEG",
+        "mode": "RGB",
+        "size_bytes": 165378
+      },
+      "description": "The image presents a breathtaking scene of nature's grandeur. Dominating the sky is a majestic mountain peak, its snow-capped summit standing tall against the backdrop of the deep blue sky. The mountain itself is blanketed in clouds, creating an ethereal effect that adds to the overall beauty of the landscape.\n\nThe color palette is dominated by hues of blue and orange, with the blues of the sky providing a stark contrast to the warm oranges of the sunset. The sun is seen setting behind the mountain, casting a golden glow on the peaks and clouds, adding depth and dimension to the scene.\n\nIn the foreground, there are clouds that appear to be swirling around each other, creating a dynamic sense of movement in the image. The clouds' texture adds an interesting visual element to the composition.\n\nThe moon is also visible in the sky, located near the mountain peak, providing a beautiful contrast to the bright sunset.\n\nOverall, the mood of the image is serene and majestic, capturing the beauty and tranquility of nature at its finest. The composition of the image, with the mountain in the background and the clouds in the foreground, leads the viewer's eye towards the mountain peak, creating a sense of depth and perspective.",
+      "model_used": "llava:7b",
+      "prompt_used": "Describe this image in detail, including objects, people, colors, composition, and mood.",
+      "error": null
+    },
+    {
+      "file_path": "images/image-11.jpg",
+      "file_name": "image-11.jpg",
+      "file_size_bytes": 306860,
+      "processed_at": "2026-02-11T18:19:20.130449",
+      "image_info": {
+        "width": 1280,
+        "height": 960,
+        "format": "JPEG",
+        "mode": "L",
+        "size_bytes": 306860
+      },
+      "description": "This is a color photograph depicting a collection of flowers with intricate details. The flowers appear to be a type of daisy or flower head with multiple petals and distinct textures. They are densely packed together, creating a lush floral arrangement. The image has a muted color palette with soft greens and grays, highlighting the natural patterns and shapes within the flowers.\n\nThe photo is taken from an overhead perspective, allowing for a clear view of the flowers' arrangement and texture. The background is blurred but suggests that the flowers are growing on a plant or stem. There are no visible texts or markings in the image. The overall mood of the photograph conveys a sense of serenity and natural beauty.",
+      "model_used": "llava:7b",
+      "prompt_used": "Describe this image in detail, including objects, people, colors, composition, and mood.",
+      "error": null
+    }
+  ],
+  "summary": {
+    "total_images": 3,
+    "successfully_processed": 3,
+    "failed_to_process": 0,
+    "success_rate": "100.0%"
+  }
+}

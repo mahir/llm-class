@@ -117,7 +117,7 @@ class ModelJudge:
     """Judges and compares responses from different models."""
     
     def __init__(self, ollama_client: OllamaClient,
-                 judge_model: str = "llama3.2"):
+                 judge_model: str = "llama3.2:latest"):
         self.client = ollama_client
         self.judge_model = judge_model
     
